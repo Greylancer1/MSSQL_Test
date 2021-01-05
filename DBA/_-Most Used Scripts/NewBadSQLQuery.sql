@@ -16,6 +16,6 @@ WHERE
 DB_NAME(st.dbid) NOT IN ('master','msdb','ReportServer','ReportServerTempDB')
 ORDER BY 
 --total_elapsed_time/execution_count DESC --Longest Running
-total_logical_reads/execution_count DESC --Most Logical Reads
---total_physical_reads / execution_count DESC --Most Physical Reads
+--total_logical_reads/execution_count DESC --Most Logical Reads
+total_physical_reads / execution_count DESC --Most Physical Reads
 --(total_worker_time/execution_count)/1000 DESC --Most CPU
