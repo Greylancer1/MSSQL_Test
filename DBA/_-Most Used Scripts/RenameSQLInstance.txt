@@ -1,0 +1,8 @@
+USE master
+GO
+
+EXEC sp_dropserver 'ASCP'
+GO
+
+EXEC sp_addserver 'ASCT', local
+GO

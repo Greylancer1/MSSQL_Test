@@ -1,0 +1,42 @@
+CREATE TABLE #eachDB(
+FileID INT
+, FileSize BIGINT
+, StartOffset BIGINT
+, FSeqNo BIGINT
+, [Status] BIGINT
+, Parity BIGINT
+, CreateLSN NUMERIC(38)
+);
+CREATE TABLE #summary(
+Database_Name sysname
+, VLF_count INT
+, Log_File_count INT
+);
+EXEC sp_MSforeachdb N'Use [?];
+Insert Into #eachDB
+Exec sp_executeSQL N''DBCC LogInfo(?)'';
+Insert Into #summary
+Select DB_Name(), Count(*), Count(Distinct FileID)
+From #eachDB;
+Truncate Table #eachDB;'
+SELECT *
+FROM #summary
+ORDER BY VLF_count DESC;
+DROP TABLE #eachDB;
+DROP TABLE #summary; 
+
+
+--Answer : 
+
+--Step 1 == >  Check VLF Count using DBCC LogInfo
+
+--Step 2 ==>  Backup the Transaction Log
+
+--Step 3 == >  Shrink Transaction Log to least minimum size using TRUNCATEONLY option 
+
+--Step 3 == >  Check VLF Count using DBCC LogInfo
+
+--Step 3 == >  Grow the log file back to the desired size, you might want to increase --transaction log in 8GB batches, read start of article
+
+--Step 3 == >  Check VLF Count using DBCC LogInfo
+

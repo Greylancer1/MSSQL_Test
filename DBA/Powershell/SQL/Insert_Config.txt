@@ -1,0 +1,12 @@
+INSERT INTO ConfigMon 
+SELECT CONVERT(nvarchar(50),@@servername) as ServerName,
+CONVERT(nvarchar(50),SERVERPROPERTY('ProductVersion')) AS Version, 
+CONVERT(nvarchar(50),name), 
+CONVERT(nvarchar(50),value), 
+CONVERT(nvarchar(50),minimum), 
+CONVERT(nvarchar(50),maximum), 
+CONVERT(nvarchar(50),value_in_use) as [Value in use], 
+CONVERT(nvarchar(50),description), 
+CONVERT(nvarchar(50),is_dynamic) AS [Dynamic?], 
+CONVERT(nvarchar(50),is_advanced) AS [Advanced?]
+FROM    sys.configurations ORDER BY name

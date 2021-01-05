@@ -1,0 +1,38 @@
+DART (simple)
+DART_DATA (simple)
+RT_SCHEDULER (simple)
+PROD61
+PROD61_IMG
+PROD61_MNC
+PROD61_VM
+XAES_EAS
+
+Chris-Stop T-Log backups on 5.5 Prod
+Chris-Take Full backup 5.5 Prod (about an hour): ~8:30 AM; 43 minutes
+Chris-Copy full backup file to 6.1 1p (2-3 hours): Start ~9:15 AM End 12:15 PM = 3 hours
+Restore 5.5 backup to 1P (with no recovery about an hour); simultaneously copy 5.5 backup from 5.5 server to 2p. Start Restore 1:31 PM End 2:30 PM = 1 hour; Start copy 12:15 End 2:00PM = 1 hour 45 minutes
+After restore complete on 6.1 1p copy 5.5 backup to 6.1 3p; Start copy 2:33 PM End 4:45 PM = 2 hours 12 minutes
+Restore 5.5 full to 6.1 2p (with no recovery about an hour) Start restore 2:05 PM END 3:14 PM = 1 hour 9 minutes
+Restore 5.5 full to 6.1 3p (with no recovery about an hour) 9 HOURS; Start 4:48 PM End 5:34 PM = 46 minutes
+
+
+
+1		2		3		4		5		6		7		8		9		10
+5.5 Backup
+						Copy to 1p done
+								1p Restored
+						Copy to 2p
+												Copy to 2p done
+														2p Restored
+								Copy to 3p
+														3p restored
+						T-Log backup 5.5
+														T-Log backup 5.5
+																Restore T-Logs 1-3p
+
+
+7PM - Have DART, DART_DATA, restored on 3p = 25 minutes 
+8PM - Wait for Wendy to tell me everyone is out of SXA 5.5 -> Run read only script aginst SXASQLMP (Script lives on SCMMAVM1P: ~\CHOMP scripts\to run on 5.5!)
+8PM - Take final T-Log backup copy to 1-3p; Backup, copy & restore RT_SCHEDULER to 1p put into PROD61G AG.
+Restore to 1p (with recovery; Restore to 2p & 3p (with no recovery) 15 minutes
+Run post restore scripts (SCMMAVM1P: ~CHOMP scripts\6.1 Allscripts provided run prior to upgrade)

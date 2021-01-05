@@ -1,0 +1,128 @@
+The sp_change_users_login stored procedure will synchronize SID values for SQL logins. The syntax for this system stored procedure in the master database is as follows, per SQL Books Online:
+
+sp_change_users_login[ @Action = ] 'action'
+   [ , [ @UserNamePattern = ] 'user' ]
+   [ , [ @LoginName = ] 'login' ]
+   [ , [ @Password = ] 'password' ]
+
+Where @Action can be one of three values:
+
+    * Auto_Fix, will link a user in the current database's sysusers table with a SQL Server login of the same name in the master database's syslogins table.  If the login does not exist in master then it will be created.  This means you'll need to supply a password if the login does not exist.
+    * Report, simply lists the user(s) and corresponding SID(s) in the current database that are not linked to a SQL login in the master database.
+    * Update_One, which is the focus of this article, will link a specified user in the current database to an existing login in the master database's syslogins table.  It is only a matter of supplying the stored procedure with the "Update_One" parameter, along with values for the following two parameters:
+
+The @UserNamePattern is the name of the orphaned user in the current database and the @LoginName parameter must be a valid login name as it exists in master..syslogins.  In both cases the datatype is sysname and they default to NULL.
+
+Now the fun begins. With a simple cursor (yes, I said C-U-R-S-O-R), we can loop through any SQL users in the database and reconcile their SID values to those of their corresponding logins. You may be asking why I am only interested in SQL logins. It is simply because only SQL logins are orphaned. This is another reason for using integrated security whenever possible.
+
+On that note, let's look at the code that will save you time every time it's used.
+
+--Using Test_DB
+DECLARE @user SYSNAME
+DECLARE @SQL NVARCHAR(300)
+DECLARE cur_Users CURSOR FOR
+SELECT name
+   FROM sysusers
+   WHERE islogin = 1
+      AND isntname = 0
+      AND NAME NOT IN ('guest', 'dbo', 'sys', 'INFORMATION_SCHEMA')
+   ORDER BY name
+OPEN cur_Users
+         FETCH NEXT
+   FROM cur_Users INTO @user
+WHILE @@FETCH_STATUS = 0
+   BEGIN
+   SELECT @SQL = 'EXEC sp_change_users_login ' + '''' + 'UPDATE_ONE'
++ '''' + ', ' + '''' + @user + '''' + ', ' + '''' + @user + ''''
+   EXEC sp_executesql @SQL
+            FETCH NEXT
+      FROM cur_Users INTO @user
+   END
+         CLOSE cur_Users
+         DEALLOCATE cur_Users
+
+This script will loop through all SQL logins 
+
+
+
+USE MASTER
+GO
+SET NoCount ON
+DECLARE @VarDbId INT,
+@SQL nvarchar(4000),
+@VDBName nvarchar(260),
+@OUCounter INT,
+@Max_OUCounter INT
+SELECT @VarDbId=4,
+@SQL =''
+CREATE TABLE #OrphaneUsers
+(
+ID INT IDENTITY (1,1) NOT NULL,
+DBName VARCHAR(125) NULL ,
+UserName sysname NULL ,
+UserSID VARBINARY(85) NULL ,
+LoginExists bit NULL
+)
+WHILE EXISTS
+(SELECT database_id
+FROM sys.databases
+WHERE database_id>@VarDbId
+AND state_desc ='ONLINE'
+)
+BEGIN
+SELECT TOP 1
+@SQL ='Create table #OrphaneUser
+
+(UserName sysname null,
+
+UserSID varbinary(85) null )
+
+insert into #OrphaneUser exec ' + name+ '.dbo.sp_change_users_login ''report''
+
+insert into #OrphaneUsers(DBName,UserName,UserSID,LoginExists) select '''+ name+''' as[dbname], UserName, UserSID,0 from #OrphaneUser
+
+drop Table #OrphaneUser',
+@VDBName=name
+FROM sys.databases
+WHERE database_id>@VarDbId
+AND state_desc ='ONLINE'
+ORDER BY database_id
+EXEC SP_Executesql @SQL
+SELECT TOP 1
+@VarDbId=database_id
+FROM sys.databases
+WHERE database_id>@VarDbId
+AND state_desc ='ONLINE'
+END
+UPDATE #OrphaneUsers
+SET LoginExists=1
+FROM #OrphaneUsers
+JOIN syslogins
+ON #OrphaneUsers.UserName=syslogins.NAME
+SELECT @OUCounter =0,
+@Max_OUCounter =COUNT(0)
+FROM #OrphaneUsers
+WHERE LoginExists=1
+WHILE EXISTS
+(SELECT TOP 1
+id
+FROM #OrphaneUsers
+WHERE LoginExists=1
+AND id >@OUCounter
+)
+BEGIN
+SELECT TOP 1
+@OUCounter=id
+FROM #OrphaneUsers
+WHERE LoginExists=1
+AND id >@OUCounter
+SELECT @SQL ='EXEC '+DBName+'.dbo.sp_change_users_login ''Auto_Fix'', '''+UserName+''', NULL, '''+UserName+''''
+FROM #OrphaneUsers
+WHERE LoginExists=1
+AND id =@OUCounter
+EXEC SP_Executesql @SQL
+PRINT @SQL
+END
+SELECT *
+FROM #OrphaneUsers
+DROP TABLE #OrphaneUsers

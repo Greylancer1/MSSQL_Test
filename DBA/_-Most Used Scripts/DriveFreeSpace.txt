@@ -1,0 +1,2 @@
+EXEC MASTER..xp_fixeddrives
+GO

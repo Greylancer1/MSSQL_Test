@@ -1,0 +1,18 @@
+set nocount on
+create table #sp_who2 (
+  spid		smallint,
+  status	nchar(30),
+  loginame	nchar(128),
+  hostname	nchar(128),
+  BlkBy		char(5),
+  DBName	nchar(128),
+  Command		nchar(16),
+  CPUTime		nchar(128),
+  DiskIO			nchar(128),
+  LastBatch		nchar(16),
+  ProgramName		nchar(128),
+  spid2		nchar(128),
+  REQUESTID		nchar(128))
+insert into #sp_who2 execute sp_who2
+SELECT COUNT(*) FROM #sp_who2 WHERE Hostname = 'SXACON552P' and PROGRAMName = 'Eclipsys Sunrise eLink'
+drop table #sp_who2

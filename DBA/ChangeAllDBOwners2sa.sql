@@ -1,0 +1,1 @@
+EXEC sp_MSforeachdb 'EXEC [?]..sp_changedbowner ''sa'''

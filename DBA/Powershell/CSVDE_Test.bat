@@ -1,0 +1,1 @@
+csvde -f HYWD_ADExtract.csv -p subtree -l DN,objectClass,distinguishedName,whenCreated,whenChanged,name,objectCategory,cn,description,member,sAMAccountName,managedBy,memberOf,displayName,sn,givenName,userPrincipalName,c,l,st,title,physicalDeliveryOffice,telephoneNumber,co,department,company,proxyAddress,StreetAddress,mail,manager

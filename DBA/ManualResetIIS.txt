@@ -1,0 +1,4 @@
+First check if ASPNET is a local user on your machine. Most likely it is not, because you installed .Net framework before installing IIS. To add this user, go to C:\WINDOWS\Microsoft.NET\Framework\v2.0.50727, and run aspnet_regiis.exe -i -enable.
+
+If this still doesn't help, try reinstalling .net framework.
+

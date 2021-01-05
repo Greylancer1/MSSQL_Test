@@ -1,0 +1,1 @@
+select name,is_trustworthy_on from sys.databases 

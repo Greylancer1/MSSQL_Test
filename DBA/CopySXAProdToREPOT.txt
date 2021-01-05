@@ -1,0 +1,365 @@
+USE [master]
+GO
+/****** Object:  StoredProcedure [dbo].[CHOMP_RestoreSXAProdToREPOT]    Script Date: 09/13/2008 08:21:08 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER proc [dbo].[CHOMP_RestoreSXAProdToREPOT]
+AS
+
+
+SET NOCOUNT ON
+
+	
+-- SET to single user, kicking everyone out, so we can restore the db
+ALTER DATABASE REPOT SET single_user WITH rollback immediate
+		
+-- confirm the logical & physical filenames are still good
+--RESTORE FILELISTONLY FROM DISK= 'K:\MSSQL\Archive\SXAProd.bak'
+
+-- change logical filenames if needed, change physical for current backup file
+RESTORE DATABASE REPOT FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd\SXAProd.bak'
+WITH MOVE 'CHXAP_Data' TO 'F:\MSSQL$SXA\Data\REPOT_data.MDF',
+MOVE 'AMB' TO 'G:\MSSQL\Data\REPOTAMB_data.ndf',
+MOVE 'DM' TO 'G:\MSSQL\Data\REPOTDM_data.ndf',
+MOVE 'IMM' TO 'G:\MSSQL\Data\REPOTIMM_data.ndf',
+MOVE 'CHXAP_Data2' TO 'H:\MSSQL\Data\CHXAP_Data2.ndf',
+     MOVE 'CHXAP_Log' TO 'G:\MSSQL\logs\REPOT_log.LDF',
+		REPLACE,
+		RECOVERY
+
+-- SET to single user, kicking everyone out, so we can restore the db
+	ALTER DATABASE REPOT_ED SET single_user WITH rollback immediate
+	
+	-- confirm the logical & physical filenames are still good, see step 5
+	--RESTORE FILELISTONLY FROM DISK= '\\sxasqlrep\ArchiveREP\REPO_ED\REPO_ED.bak'
+		
+	
+	-- change logical filenames if needed, change physical for current backup file
+	RESTORE DATABASE REPOT_ED FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd_ED\SXAProd_ED.bak'
+	WITH MOVE 'SXAProd_ED_data' TO 'G:\MSSQL\Data\REPOT_ED_data.MDF',
+	MOVE 'ED' TO 'G:\MSSQL\Data\REPOT_EDED_data.NDF',
+	     MOVE 'SXAProd_ED_log' TO 'G:\MSSQL\logs\REPOT_ED_log.LDF',
+			REPLACE,
+			RECOVERY
+		
+
+-- SET to single user, kicking everyone out, so we can restore the db
+ALTER DATABASE REPOT_mnc SET single_user WITH rollback immediate
+
+-- confirm the logical & physical filenames are still good, see step 5
+--RESTORE FILELISTONLY FROM DISK= '\\sxasqlrep\ArchiveREP\REPO_MNC\REPO_MNC.bak'
+
+
+-- change logical filenames if needed, change physical for current backup file
+RESTORE DATABASE REPOT_mnc FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd_MNC\SXAProd_MNC.bak'
+WITH MOVE 'SXAProd_MNC_dat' TO 'G:\MSSQL\Data\Data\REPOT_mnc.MDF',
+MOVE 'MNC' TO 'G:\MSSQL\Data\REPOT_MNCMNC.NDF',
+     MOVE 'SXAProd_MNC_log' TO 'G:\MSSQL\logs\REPOT_mnc_log.LDF',
+		REPLACE,
+		RECOVERY
+
+-- SET to single user, kicking everyone out, so we can restore the db
+ALTER DATABASE REPOT_img SET single_user WITH rollback immediate
+
+-- confirm the logical & physical filenames are still good, see step 5
+--RESTORE FILELISTONLY FROM DISK= '\\sxasqlrep\ArchiveREP\REPO_IMG\REPO_IMG.bak'
+
+-- change logical filenames if needed, change physical for current backup file
+RESTORE DATABASE REPOT_img FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd_IMG\SXAProd_IMG.bak'
+WITH MOVE 'SXAProd_IMG_dat' TO 'G:\MSSQL\Data\REPOT_img.MDF',
+MOVE 'IMG' TO 'G:\MSSQL\Data\REPOT_imgIMG.MDF',
+     MOVE 'SXAProd_IMG_log' TO 'G:\MSSQL\logs\REPOT_img.LDF',
+		REPLACE,
+		RECOVERY
+		
+-- SET to single user, kicking everyone out, so we can restore the db
+ALTER DATABASE REPOT_vm SET single_user WITH rollback immediate
+		
+-- confirm the logical & physical filenames are still good, see step 5
+--RESTORE FILELISTONLY FROM DISK= '\\sxasqlrep\ArchiveREP\REPO_VM\REPO_VM.bak'
+	
+
+-- change logical filenames if needed, change physical for current backup file
+RESTORE DATABASE REPOT_vm FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd_VM\SXAProd_VM.bak'
+WITH MOVE 'SXAProd_VM_dat' TO 'G:\MSSQL\Data\REPOT_vm_data.MDF',
+MOVE 'VM' TO'G:\MSSQL\Data\REPOT_vmVM_data.MDF',
+     MOVE 'SXAProd_VM_log' TO 'G:\MSSQL\logs\REPOT_vm_log.LDF',
+		REPLACE,
+		RECOVERY
+
+
+--SELECT * FROM REPOT_ED.dbo.SXADBComponentInstall
+UPDATE REPOT_ED.dbo.SXADBComponentInstall
+SET MasterSQLServerName = 'SXASQLRET/SXA',
+MasterDBName = 'REPOT'
+
+--SELECT * FROM REPOT_ED.dbo.SXADBComponentLinkedServer
+UPDATE REPOT_ED.dbo.SXADBComponentLinkedServer
+SET LinkedServer = 'SXASQLRET/SXA'
+
+--SELECT * FROM REPOT_img.dbo.SXADBComponentInstall
+UPDATE REPOT_img.dbo.SXADBComponentInstall
+SET MasterSQLServerName = 'SXASQLRET/SXA',
+MasterDBName = 'REPOT'
+
+--SELECT * FROM REPOT_img.dbo.SXADBComponentLinkedServer
+UPDATE REPOT_img.dbo.SXADBComponentLinkedServer
+SET [LinkedServer] = 'SXASQLRET/SXA'
+	
+		
+--SELECT * FROM REPOT_vm.dbo.SXADBComponentInstall
+UPDATE REPOT_vm.dbo.SXADBComponentInstall
+SET MasterSQLServerName = 'SXASQLRET/SXA',
+MasterDBName = 'REPOT'
+
+--SELECT * FROM REPOT_vm.dbo.SXADBComponentLinkedServer
+UPDATE REPOT_vm.dbo.SXADBComponentLinkedServer
+SET [LinkedServer] = 'SXASQLRET/SXA'
+
+   
+--SELECT * FROM REPOT_mnc.dbo.SXADBComponentInstall
+UPDATE REPOT_mnc.dbo.SXADBComponentInstall
+SET MasterSQLServerName = 'SXASQLRET/SXA',
+MasterDBName = 'REPOT'
+
+--SELECT * FROM REPOT_mnc.dbo.SXADBComponentLinkedServer
+UPDATE REPOT_mnc.dbo.SXADBComponentLinkedServer
+SET [LinkedServer] = 'SXASQLRET/SXA'
+
+
+
+
+-- SELECT * FROM REPOT.dbo.HVCSite
+UPDATE REPOT.dbo.HVCSite
+SET SQLServerName = 'SXASQLRET/SXA',
+DBName ='REPOT'
+WHERE Description = 'Master Active'
+
+-- UPDATE HVCSite
+UPDATE REPOT.dbo.HVCSite
+SET [LinkedServer] = 'SXASQLRET/SXA',
+SQLServerName = 'SXASQLRET/SXA',
+DBName ='REPOT_vm'
+WHERE Description = 'Vocabulary Manager'
+
+-- UPDATE HVCSite
+UPDATE REPOT.dbo.HVCSite
+SET [LinkedServer] = 'SXASQLRET/SXA',
+SQLServerName = 'SXASQLRET/SXA',
+DBName ='REPOT_img'
+WHERE Description = 'Imaging'
+
+-- UPDATE HVCSite
+UPDATE REPOT.dbo.HVCSite
+SET [LinkedServer] = 'SXASQLRET/SXA',
+SQLServerName = 'SXASQLRET/SXA',
+DBName ='REPOT_mnc'
+WHERE Description = 'Medical Necessity Checking'
+
+-- UPDATE HVCSite
+UPDATE REPOT.dbo.HVCSite
+SET [LinkedServer] = 'SXASQLRET/SXA',
+SQLServerName = 'SXASQLRET/SXA',
+DBName ='REPOT_ED'
+WHERE Description = 'Emergency Department'
+
+	
+--drop/add special logins REPOT
+exec REPOT.dbo.sp_dropuser Reportuser
+	
+exec REPOT.dbo.sp_dropuser appanalyst
+		
+exec REPOT.dbo.sp_adduser Reportuser
+
+exec REPOT.dbo.sp_adduser appanalyst
+		
+		
+exec REPOT.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec REPOT.dbo.sp_addrolemember HVCUser, Reportuser
+		
+exec REPOT.dbo.sp_addrolemember db_datareader, appanalyst
+		
+
+
+
+--drop/add special logins REPOT_VM
+exec REPOT_vm.dbo.sp_dropuser Reportuser
+		
+exec REPOT_vm.dbo.sp_dropuser appanalyst
+		
+exec REPOT_vm.dbo.sp_adduser Reportuser
+		
+exec REPOT_vm.dbo.sp_adduser appanalyst
+
+exec REPOT_vm.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec REPOT_vm.dbo.sp_addrolemember HVCUser, Reportuser
+		
+exec REPOT_vm.dbo.sp_addrolemember db_datareader, appanalyst
+
+		
+		
+--drop/add special logins REPOT_MNC
+exec REPOT_mnc.dbo.sp_dropuser Reportuser
+		
+exec REPOT_mnc.dbo.sp_dropuser appanalyst
+		
+exec REPOT_mnc.dbo.sp_adduser Reportuser
+		
+exec REPOT_mnc.dbo.sp_adduser appanalyst
+
+				
+exec REPOT_mnc.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec REPOT_mnc.dbo.sp_addrolemember HVCUser, Reportuser
+		
+exec REPOT_mnc.dbo.sp_addrolemember db_datareader, appanalyst
+
+--drop/add special logins REPOT_IMG
+exec REPOT_img.dbo.sp_dropuser Reportuser
+		
+exec REPOT_img.dbo.sp_dropuser appanalyst
+
+exec REPOT_img.dbo.sp_adduser Reportuser
+		
+exec REPOT_img.dbo.sp_adduser appanalyst
+
+		
+exec REPOT_img.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec REPOT_img.dbo.sp_addrolemember HVCUser, Reportuser
+	
+exec REPOT_img.dbo.sp_addrolemember db_datareader, appanalyst
+
+
+--drop/add special logins REPOT_ED
+exec REPOT_ED.dbo.sp_dropuser Reportuser
+		
+exec REPOT_ED.dbo.sp_dropuser appanalyst
+
+exec REPOT_ED.dbo.sp_adduser Reportuser
+		
+exec REPOT_ED.dbo.sp_adduser appanalyst
+
+		
+exec REPOT_ED.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec REPOT_ED.dbo.sp_addrolemember HVCUser, Reportuser
+		
+exec REPOT_ED.dbo.sp_addrolemember db_datareader, appanalyst
+		
+
+-- SELECT replace(ScriptsDirectory, '\\CHSXACON_P', '\\CHSXACON_T'), * FROM REPOT.dbo.SCMInstallDetail
+UPDATE REPOT.dbo.SCMInstallDetail  --  ******************************************
+SET dataserver = 'SXASQLRET/SXA',
+masterdataserver = 'SXASQLRET/SXA',
+ScriptsDirectory = (SELECT replace(ScriptsDirectory, '\\CHSXACON_P', '\\CHSXACON_T')),
+dbname ='REPOT'
+ 
+--SELECT * FROM REPOT.dbo.sxaeisdataserver
+UPDATE REPOT.dbo.sxaeisdataserver
+SET ServerName = 'SXASQLRET/SXA'
+
+
+	
+-- SELECT * FROM REPOT.dbo.CV3CommunicationProcess
+UPDATE REPOT.dbo.CV3CommunicationProcess
+SET DoorbellName = 'RPTSCH_PRE_RPTSCH',
+MessageServerCode ='PRE_RPTMS',
+communicationtype = 'Other'
+WHERE Code = 'Report SCHEDULER'
+
+-- UPDATE CV3CommunicationProcess
+UPDATE REPOT.dbo.CV3CommunicationProcess
+SET DoorbellName = 'ORDGENSCH_PRE_OGSCH',
+MessageServerCode ='PRE_OGMS',
+communicationtype = 'Other'
+WHERE Code = 'ORDER GENERATION SCHEDULER'
+
+-- to prevent orders REQ's from printing
+UPDATE REPOT.dbo.CV3CommunicationProcess
+SET communicationtype = 'Other'
+WHERE communicationtype = 'Report'
+
+
+-- SELECT * FROM REPOT.dbo.SXADBVersionHistory   ***********************************
+UPDATE REPOT.dbo.SXADBVersionHistory
+SET SQLInstance = 'SXASQLRET/SXA',
+ScriptsDirectory =  (SELECT replace(ScriptsDirectory, '\\CHSXACON_P', '\\CHSXACON_T')),
+DBName ='REPOT'
+
+--reSET the logical printer paths to the new Report server
+--select * from REPOT.dbo.HVCLogicalPrintLocation
+UPDATE REPOT.dbo.HVCLogicalPrintLocation
+SET printeraddress =  '\\chsxarptt\HISG16687pr'
+FROM REPOT.dbo.hvclogicalprintlocation
+WHERE printeraddress LIKE '%chsxarpt%'
+
+UPDATE REPOT.dbo.hvcReportdefinition
+SET printeraddress =  '\\chsxarptt\HISG16687pr'
+FROM REPOT.dbo.hvcReportdefinition
+WHERE printeraddress LIKE '%chsxarpt%'
+
+UPDATE REPOT.dbo.hvcReportdistribution
+SET printeraddress =  '\\chsxarptt\HISG16687pr'
+FROM REPOT.dbo.hvcReportdistribution
+WHERE printeraddress like '%chsxarpt%'
+
+--SELECT * FROM REPOT.dbo.SXADBJobStepConfig       
+UPDATE REPOT.dbo.SXADBJobStepConfig
+SET Command = (SELECT replace(command, 'SXASQLMAP', 'SXASQLRET/SXA'))
+FROM REPOT.dbo.SXADBJobStepConfig
+WHERE Command like '%SXASQLMAP%'
+
+UPDATE REPOT.dbo.SXADBJobStepConfig
+SET Command = (SELECT replace(command, 'SXAProd', 'REPOT'))
+FROM REPOT.dbo.SXADBJobStepConfig
+WHERE SXADBJobID = '18'
+
+
+UPDATE REPOT.dbo.SXADBJobStepConfig
+SET Command = (SELECT replace(command, 'SXAPROD_ED', 'REPOT_ED'))
+FROM REPOT.dbo.SXADBJobStepConfig
+WHERE SXADBJobID = '13'	
+
+UPDATE REPOT.dbo.cv3user
+SET idcode = ('xxzz22' + idcode)
+WHERE idcode in (
+SELECT DISTINCT idcode 
+FROM dbo.cv3user u
+INNER JOIN dbo.cv3organizationalunit ou
+ON ou.guid = u.orgunitguid
+WHERE --ou.name NOT in ('Clinical Informatics', 'it - sxa') 
+--AND 
+u.active = 1)
+
+
+--cleanup unnecessary data 
+-- keep this in case we restore from repo.bak when history was left in
+	
+TRUNCATE TABLE REPOT.dbo.cv3auditlog
+TRUNCATE TABLE REPOT.dbo.cv3ordergenerationqueue
+TRUNCATE TABLE REPOT.dbo.CV3WorklistClientVisit
+TRUNCATE TABLE REPOT.dbo.CV3WorkUserItemAccess
+TRUNCATE TABLE REPOT.dbo.HVCSubmittedReport
+TRUNCATE TABLE REPOT.dbo.HVCRequestedReport
+TRUNCATE TABLE REPOT.dbo.HVCReportHistory
+
+
+
+DBCC CHECKDB ('REPOT')
+DBCC CHECKDB ('REPOT_IMG')
+DBCC CHECKDB ('REPOT_MNC')
+DBCC CHECKDB ('REPOT_VM')
+DBCC CHECKDB ('REPOT_ED')
+
+   
+   
+/*****************************************************************************
+Name:	CRussell
+Date:	6/24/05
+Desc:	To copy the Prod database, to REPOT on SXASQLRET/SXA
+*****************************************************************************/

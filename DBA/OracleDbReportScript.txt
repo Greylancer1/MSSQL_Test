@@ -1,0 +1,1313 @@
+rem 
+**************************************************************************
+rem Module Name : dbrpt.sql
+rem Language : SQL*Plus
+rem Host : turf.domain.com
+rem Description : Run as SYSTEM.
+rem History :
+rem Date Name Comments
+rem -------- --------- --------------------------------------------------
+rem 05/21/00 Added new sections: max_extents, fragmentation, objects
+
+rem 
+**************************************************************************
+
+spool C:/dbrpt.lst
+
+prompt . **********************************
+prompt . * D A T A B A S E R E P O R T *
+prompt . **********************************
+col today format a40
+set heading off
+
+select 'Prepared '||to_char(sysdate,'DAY DD-MON-YY HH24:MI') today
+from sys.dual
+/
+select 'Statistics are based on data since the instance was last started on 
+'||
+to_date (to_char (value),'J')
+from v$instance
+where key='STARTUP TIME - JULIAN'
+/
+rem set linesize 120 feed 200 pagesize 150
+set linesize 80 feed 200 pagesize 68
+set heading on
+
+col name format a5 heading 'SID'
+col banner format a72 heading 'CORE COMPONENT NAME AND VERSION'
+
+select *
+from v$database
+/
+select *
+from v$version
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt LICENSING (v$license):
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+select *
+from v$license
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt DB SIZING (dba_data_files and dba_free_space)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+col tablespace_name format a15 heading 'TABLESPACE|NAME'
+col space_alloc format 999,999,999 heading 'MBytes|ALLOC'
+col space_free format 999,999,999 heading 'MBytes|FREE'
+col space_used format 999,999,999 heading 'MBytes|USED'
+col pct_used format 999.9 heading 'PCT|USED'
+col pct_free format 999.9 heading 'PCT|FREE'
+
+set feedback off
+
+drop table ts_usage
+/
+create table ts_usage (
+tablespace_name varchar(14),
+space_alloc number (11),
+space_free number (11),
+space_used number (11),
+pct_used number (5,2),
+pct_free number (5,2)
+)
+tablespace TEMP
+/
+
+insert into ts_usage (tablespace_name, space_alloc)
+select a.tablespace_name,
+sum (a.bytes)/1024/1024 malloc
+from dba_data_files a
+group by a.tablespace_name
+/
+update ts_usage c
+set space_free =
+(select sum (b.bytes)/1024/1024 mfree
+from dba_free_space b
+where b.tablespace_name = c.tablespace_name
+group by b.tablespace_name)
+/
+update ts_usage a
+set space_used =
+(select space_alloc-space_free
+from ts_usage b
+where b.tablespace_name = a.tablespace_name
+)
+/
+update ts_usage a
+set pct_used =
+(select (space_used * 100) / space_alloc
+from ts_usage b
+where b.tablespace_name = a.tablespace_name
+)
+/
+update ts_usage a
+set pct_free =
+(select (space_free * 100) / space_alloc
+from ts_usage b
+where b.tablespace_name = a.tablespace_name
+)
+/
+set heading on
+
+compute sum of space_alloc space_free space_used on report
+break on report
+
+select * from ts_usage
+/
+clear computes
+
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt TABLESPACES FRAGMENTATION:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col knt format 99999 heading "FREE FRAGS"
+
+select tablespace_name, count(bytes) knt
+from dba_free_space
+where tablespace_name != 'TEMP'
+group by tablespace_name
+order by 2 desc
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt SGA SIZING (v$sga, v$sgastat)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col name format a25 heading 'GROUP NAME'
+col kbytes format 999,999,990 heading 'Kbytes'
+col mbytes format 999,990 heading 'Mbytes'
+
+compute sum of mbytes kbytes on report
+break on report
+
+select name, value/1024/1024 "mbytes" , value/1024 "kbytes"
+from v$sga
+/
+clear computes
+
+select *
+from v$sgastat
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt BACKGROUND PROCESSES (v$bgprocess)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col name format a6 heading 'NAME'
+col description format a30
+col error format 99999999999 heading 'LAST ERROR'
+
+select paddr, name, description, error
+from v$bgprocess
+where paddr <> '00'
+order by paddr
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt OPTIMIZER MODE (v$parameter)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+set heading off
+
+select 'The optimizer_mode of this instance is: ' || value
+from v$parameter
+where name like 'optimizer_mode'
+/
+set heading on
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt TABLES W/ STATISTICS (dba_tables)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col count(*) format 990 heading 'COUNT'
+
+select owner, count(*)
+from sys.dba_tables
+where avg_row_len <> 0
+and num_rows is not null
+and owner not in ('SYS', 'SYSTEM')
+group by owner
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt TABLES W/O STATISTICS (dba_tables)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col count(*) format 990 heading 'COUNT'
+
+select owner, count(*)
+from sys.dba_tables
+where (avg_row_len is null
+or avg_row_len = 0)
+and owner in ('SYS', 'SYSTEM')
+group by owner
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt OBJECTS w/ ERRORS:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col owner format a20
+col name format a30 heading "OBJECT NAME"
+col type format a15 heading "OBJECT TYPE"
+
+select distinct owner, name, type
+from dba_errors
+order by name
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt NON-SYS OBJECTS in SYSTEM:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+select distinct owner
+from dba_segments
+where tablespace_name = 'SYSTEM'
+and owner != 'SYS'
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt REDO LOGS (v$logfile; v$log)
+prompt Tips:
+prompt 1. Multiplex Redo Logs on drives that are separate from the database.
+prompt 2. Size Redo Logs so that they switch every 30-60 minutes.
+prompt 3. When running in ARCHIVELOG mode, have enough Redo Logs so that the
+prompt largest batch process U/I/D will not wrap ALL Redo Logs.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col name format a30
+col value format a45
+
+select name, value
+from v$parameter
+where name like 'log%'
+or name like 'archive%'
+order by name
+/
+col value format 99999999999999999999
+
+select name, value
+from v$sysstat
+where name like 'redo%'
+order by name
+/
+col member format a36
+col group# format 90 heading 'G#'
+col thread# format 90 heading 'T#'
+col sequence# format 999990 heading 'SEQ#'
+col mbytes format 99,990 heading 'Mbytes'
+col bytes format 999,999,990
+col members format 90 heading 'MBRS'
+col status format a8
+col first_time format a17
+
+select b.group#, b.member, a.status,
+a.bytes/1024/1024 mbytes, a.members, a.archived
+from v$log a, v$logfile b
+where a.group#=b.group#
+/
+select a.group#, b.member, a.sequence#,
+a.first_change#, a.first_time
+from v$log a, v$logfile b
+where a.group#=b.group#
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt REDO LATCH (v$latch)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Although contention for redo log buffer access rarely degrades
+prompt performance, tools are available to tune any contention that might 
+occur.
+prompt Would like contention (WTW% and IMM%) to be less than 1%.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col "Redo Latch" format a20
+col latch format a20
+col WTW% format 99.990
+col IMM% format 99.990
+
+select name "Redo Latch",
+sum(gets) "WTW Gets",
+sum(misses) "WTW Miss",
+100*sum(misses)/(sum(gets)+sum(misses)+.01) "WTW%",
+sum(immediate_gets) "IMM Gets",
+sum(immediate_misses) "IMM Misses",
+100*sum(immediate_misses)/
+(sum(immediate_gets)+sum(immediate_misses)+.01) "IMM%"
+from v$latch
+where name like 'redo%'
+group by name
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt For redo allocation contention, tune LOG_SMALL_ENTRY_MAX_SIZE.
+prompt If redo_small_copies is more than 10% of redo_entries, then
+prompt decrease LOG_SMALL_ENTRY_MAX_SIZE.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+set heading off
+
+select 'For this instance, redo_entries is: ' || value
+from v$sysstat
+where name like 'redo_entries'
+/
+select 'For this instance, redo_small_copies is: ' || value
+from v$sysstat
+where name like 'redo_small_copies'
+/
+rem col rscpct format 999.0 heading 'REDO SMALL COPIES/|REDO ENTRIES (%)'
+rem select 100*a.value/b.value rscpct
+rem from v$sysstat a, v$sysstat b
+rem where a.name='redo small copies'
+rem and b.name='redo entries'
+rem /
+
+set heading on
+
+col asre format 999999 heading 'Avg size of Redo Entry'
+
+select a.value/b.value asre
+from v$sysstat a, v$sysstat b
+where a.name='redo size'
+and b.name='redo entries'
+/
+set heading off
+
+select 'For this instance, log_small_entry_max_size is: '||value
+from v$parameter
+where name like 'log_small_entry_max_size'
+/
+prompt For redo copy contention, tune LOG_SIMULTANEOUS_COPIES (up to 
+2*#cpu's).
+prompt What about _log_entry_prebuild_threshold (unsupported??)
+
+select 'For this instance, log_simultaneous_copies is: '||value
+from v$parameter
+where name like 'log_simultaneous_copies'
+/
+select 'For this instance, redo_log_space_requests (should be near zero) is: 
+'||
+value
+from v$sysstat
+where name='redo log space requests'
+/
+prompt Would like to see ratio of redo_log_space_requests to redo_writes
+prompt well under 1%.
+prompt For this instance the ratio of redo_log_space_requests to redo_writes 
+is:
+
+col pctrlsr format 90.990
+
+select 100*a.value/b.value pctrlsr, '%'
+from v$sysstat a, v$sysstat b
+where a.name='redo log space requests'
+and b.name='redo writes'
+/
+prompt The redo_log_space_requests can be decreased by increasing 
+LOG_BUFFER.
+prompt Default init.ora values are 8192 (small), 32768 (medium), 163840 
+(large).
+prompt LOG_BUFFER **must** be a multiple of DB_BLOCK_SIZE.
+
+select 'For this instance, log_buffer is: '||value
+from v$parameter
+where name like 'log_buffer'
+/
+set heading on
+prompt If getting "cannot alocate new log, sequence NNNN Checkpoint not
+prompt complete" in alert_SID.log, then need more (or larger) redo log 
+files.
+prompt LOG_CHECKPOINT_INTERVAL should be >= 
+redo_log_size_(bytes)/OS_block_size_(bytes)
+prompt Also can enable CKPT background process by checkpoint_process=TRUE
+set heading off
+col name format a18
+col vvv format a10
+
+select 'For this instance,', name, 'is '||value vvv
+from v$parameter
+where name = 'checkpoint_process'
+/
+set heading on
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt ROLLBACK SEGMENTS (v$rollstat, dba_rollback_segs, dba_segments)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Tips:
+prompt Number of Concurrent Tx: Rollback Segs:
+prompt less than 16 4
+prompt 16-32 8
+prompt > 32 n/4 but not more than 50
+prompt
+prompt 1. Use large rlbk seg for batch processes and use "set transaction 
+use.."
+prompt 2. Monitor rlbk segs w/ sqldba/Monitor to ensure that more than one
+prompt user is not in a single rlbk seg (add more rlbk segs if necessary).
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col segment_name format a12 heading 'SEG NAME'
+col tablespace_name format a14 heading 'TABLESPACE'
+col initial_extent format 9,999,999 heading 'Kbytes|INIT EXT'
+col next_extent format 9,999,999 heading 'Kbytes|NEXT EXT'
+col optsize format 9,999,999 heading 'Kbytes|OPTIMAL'
+col status format a7 heading 'STATUS'
+
+select a.segment_name, a.tablespace_name, a.extents,
+a.initial_extent/1024 initial_extent,
+a.next_extent/1024 next_extent, c.optsize/1024 optsize, b.status
+from sys.dba_segments a, sys.dba_rollback_segs b, v$rollstat c
+where a.segment_type ='ROLLBACK'
+and a.segment_name = b.segment_name
+and b.segment_id = c.usn (+)
+order by b.segment_name
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt ROLLBACK SEGS STATISTICS
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col segment_name format a6 heading 'NAME'
+col writes format 999999990
+col xacts format 0 heading 'XACT'
+col gets format 99999990
+col waits format 990 heading 'WAIT'
+col hwmsize format 999999990
+col shrinks format 90 heading 'SRNK'
+col wraps format 990 heading 'WRP'
+col extends format 990 heading 'XTND'
+col aveshrink format 9990 heading 'AVG|SRNK'
+col aveactive format 999999990 heading 'AVG|ACTV'
+
+compute sum of waits shrinks wraps extends on report
+break on report
+
+select b.segment_name, c.writes, c.xacts, c.gets, c.waits, c.hwmsize,
+c.shrinks, c.wraps, c.extends, c.aveshrink, c.aveactive
+from sys.dba_rollback_segs b, v$rollstat c
+where b.segment_id = c.usn
+order by b.segment_name
+/
+clear computes
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt MURPHY'S METRICS:
+prompt Try to set OPTIMAL so there aren't many SHRINKS.
+prompt Rows/Block = table_scan_rows_gotten / table_scan_blocks_gotten.
+prompt %_Index_Use = table_fetch_by_rowid /
+prompt (table_fetch_by_rowid+table_scan_rows_gotten).
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col rpb format 999,999,999,990.0 heading 'Rows/Block'
+col piu format 999,999,999,990.0 heading '% Index Use'
+
+select sum(decode(a.name,'table scan rows gotten',value,0)) /
+sum(decode(a.name,'table scan blocks gotten',value,0)) rpb,
+100*sum(decode(a.name,'table fetch by rowid',value,0)) /
+(sum(decode(a.name,'table fetch by rowid',value,0)) +
+sum(decode(a.name,'table scan rows gotten',value,0))) piu
+from v$sysstat a
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Information about full table scans (long tables are 5 or more 
+blocks):
+prompt Percent Long Table Scans of less than 10% is desirable, and 
+represents
+prompt effective use of indexes (v$sysstat).
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col long_table_scans format 999,999,990
+col short_table_scans format 999,999,999,999,999,990
+col "PERCENT LONG TABLE SCANS" format 9999999999999999999999990.0
+
+select a.value long_table_scans,
+b.value short_table_scans,
+100 * a.value / (a.value + b.value) "PERCENT LONG TABLE SCANS"
+from v$sysstat a, v$sysstat b
+where a.statistic# = 89
+and b.statistic# = 88
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Tips:
+prompt If the application requires a lot of full table scans (can't reduce 
+them
+prompt by tuning the SQL),consider increasing DB_FILE_MULTIBLOCK_READ_COUNT.
+prompt Default init.ora values for DB_FILE_MULTIBLOCK_READ_COUNT are 8 
+(small),
+prompt 16 (medium), 32 (large).
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+col value format a4
+set heading off
+
+select 'For this instance, db_file_multiblock_read_count is:', value
+from v$parameter
+where name like 'db_file_multiblock_read_count'
+/
+set heading on
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt I/O per TABLESPACE DATAFILE
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+clear computes
+compute sum of phyrds phyblkrd pctr phywrts phyblkwrt pctw on report
+
+col file_name format a34
+col tablespace_name format a12 heading 'TABLESPACE'
+col phyrds format 999990 heading 'PHY|RDS'
+col phyblkrd format 9999990 heading 'PHY|BLKRD'
+col pctr format 9990 heading '% R'
+col phywrts format 999990 heading 'PHY|WRTS'
+col phyblkwrt format 9999990 heading 'PHY|BLKWRT'
+col pctw format 9990 heading '% W'
+
+select a.file_name, b.phyrds, b.phyblkrd,
+100*b.phyblkrd/c.value pctr, b.phywrts, b.phyblkwrt,
+100*b.phyblkwrt/d.value pctw
+from sys.dba_data_files a, v$filestat b, v$sysstat c, v$sysstat d
+where a.file_id = b.file#
+and c.name='physical reads'
+and d.name='physical writes'
+order by b.phyblkrd desc
+/
+clear computes
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Tips:
+prompt 1. If I/O to TEMP is high, look at sorts, sort_area_size, etc.
+prompt 2. If I/O to SYSTEM is high, see what's in SYSTEM that's not owned by 
+SYS
+prompt
+prompt Interesting ratios (v$filestat):
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col rw format 999,990.0 heading 'READ/WRITE|RATIO'
+col brw format 999,999,999,990.0 heading 'BLOCK_READ/BLOCK_WRITE|RATIO'
+col bpr format 99999990.0 heading 'BLOCKS|PER READ'
+
+select sum (phyrds)/sum(phywrts) rw, sum(phyblkrd)/sum(phyblkwrt) brw,
+sum (phyblkrd)/sum(phyrds) bpr
+from v$filestat
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt DBA_TABLESPACES
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Tips:
+prompt 1. Separate key Oracle files and separate data and indexes files
+prompt based on the application.
+prompt 2. Keep data files (tables) on different disks and controllers than
+prompt the corresponding index data file.
+prompt 3. Example:
+prompt The SYSTEM tablespace
+prompt The TEMPORARY tablespace
+prompt The rollback segments tablespace
+prompt The REDO logs
+prompt The operating system disk
+prompt Heavily accessed table's corresponding data files
+prompt Heavily accessed index's corresponding data files
+prompt 4. Tables that will be often joined should have all data and indexes
+prompt separated.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col tablespace_name format a12 heading 'TABLESPACE'
+col initial_extent format 9,999,999 heading 'KBytes|INIT EXT'
+col next_extent format 9,999,999 heading 'KBytes|NEXT EXT'
+col min_extents heading 'MIN EXT'
+col max_extents heading 'MAX EXT'
+col pct_increase format 990 heading '% INCR'
+
+select tablespace_name, initial_extent/1024 initial_extent,
+next_extent/1024 next_extent, min_extents, max_extents,
+pct_increase, status
+from sys.dba_tablespaces
+order by status desc, tablespace_name
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt DBA_DATA_FILES
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col tablespace_name format a20 heading "TABLESPACE"
+col file_name format a40 heading "FILE NAME"
+col file_id format 9999999 heading "FILE ID"
+col ts_size format 99,999 heading "MBYTES"
+
+break on tablespace_name
+compute sum of ts_size on tablespace_name
+
+select tablespace_name, file_name, file_id, bytes/1024/1024 "ts_size"
+from dba_data_files
+order by tablespace_name, file_name
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt DATABASE BUFFER CACHE
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Tips:
+prompt 1. If DB_BLOCK_BUFFERS is low, users will not have enough memory to
+prompt operate efficiently.
+prompt 2. If DB_BLOCK_BUFFERS is high, the system may begin to swap and may 
+come
+prompt to a halt.
+prompt 3. Size DB_BLOCK_BUFFERS at about 25% of total memory;the sizing 
+depends
+prompt also on the number of users.
+prompt 4. Buffer Cache Hit Ratio should be at least 80% for "normal" 
+activity.
+prompt 5. But be sure there's not another reason for low Buffer Cache Hit 
+Ratio
+prompt (e.g., untuned SQL, unnecessary full table scans).
+prompt 6. Don't forget that databases using UNIX filesystem datafiles
+prompt have the UNIX buffer pool behind the DB_BLOCK_BUFFERS cache.
+prompt Default init.ora values for DB_BLOCK_BUFFERS are 200 (small),
+prompt 550 (medium), 3200 (large).
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Hit Ratio = 1 - Physical/Logical Reads x 100%
+prompt where:
+prompt Logical Reads = db block gets + consistent gets
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col value format 999,999,999
+
+select name, value
+from v$sysstat
+where name in ('db block gets', 'consistent gets', 'physical reads')
+/
+prompt
+prompt Buffer Cache Hit Ratio (since last 'startup') for this instance is:
+
+col LOGICAL_READS format 99,999,999,999,999
+col PHYSICAL_READS format 99,999,999,999,999
+col "HIT_%" format 999999.9
+
+select a.value + b.value LOGICAL_READS, c.value PHYSICAL_READS,
+round (((a.value+b.value) -c.value) / (a.value+b.value),4) *100 "HIT_%"
+from V$SYSSTAT a, V$SYSSTAT b, V$SYSSTAT c
+where a.statistic# = 37
+and b.statistic# = 38
+and c.statistic# = 39
+/
+col value format 999,999,999
+set heading off
+
+select 'For this instance, db_block_buffers is:',
+to_number(value) value
+from v$parameter
+where name like 'db_block_buffers'
+/
+set heading on
+rem prompt State of buffers in Database Buffer Cache: (If any are "Free",
+rem prompt DB_BLOCK_BUFFER value may be too large).
+rem select decode (state,
+rem 0, 'Free',
+rem 1, 'Read and Modified',
+rem 2, 'Read and Not Modified',
+rem 3, 'Currently Being Read',
+rem 'Other') "STATE",
+rem Count(*) "COUNT"
+rem from x$bh
+rem group by decode (state,
+rem 0, 'Free',
+rem 1, 'Read and Modified',
+rem 2, 'Read and Not Modified',
+rem 3, 'Currently Being Read',
+rem 'Other')
+rem /
+
+prompt Following ratio should be "low":
+col ratio format 09.99990 heading 'Free buffer inspected/|DBWR buffers 
+scanned'
+
+select a.value/b.value ratio
+from v$sysstat a, v$sysstat b
+where a.name='free buffer inspected'
+and b.name='DBWR buffers scanned'
+/
+prompt Following ratio is "interesting". Consistent gets is the number of
+prompt blocks accessed in the buffer cache for queries W/O the select for 
+update
+prompt DB block gets is the number of blocks accessed in the buffer cache 
+for
+prompt insert, update, delete and select for update operations.
+prompt Consistent gets + db block gets = logical reads.
+
+col ratio format 999,999,999,990 heading 'Consistent gets/db block gets'
+
+select a.value/b.value ratio
+from v$sysstat a, v$sysstat b
+where a.name='consistent gets'
+and b.name='db block gets'
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt FREE LIST CONTENTION
+prompt 1st query show number of freelist-wait situations.
+prompt 2nd query show total number of requests for data over same period of 
+time
+prompt percentage of freelist wait situations= 1st/2nd
+prompt If the number of waits for free blocks > 1 % of the total number of
+prompt requests, then probably you have freelist contention.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+select class, count
+from v$waitstat
+where class = 'freelist'
+/
+select sum (value)
+from v$sysstat
+where name in ('db block gets', 'consistent gets')
+/
+prompt percentage of freelist wait situations =
+
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt DICTIONARY CACHE (v$rowcache)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Tips:
+prompt 1. The average dictionary cache hit ratio should be over 95%.
+prompt 2. If Dictionary Cache Miss Ratio > 15%, increase shared_pool_size.
+prompt 3. Shared_pool_size should be sized at 50% to 75% of 
+db_block_buffers.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+col hit_ratio format 999.90 heading 'For this instance, the Dictionary Cache 
+Hit Ratio is: '
+
+select (1-(sum (getmisses) / (sum (gets) +sum (getmisses)))) * 100 hit_ratio
+from v$rowcache
+/
+prompt Following are selected individual
+prompt dictionary cache entries (Miss Rate > 5%, gets > 100,000, etc)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+col value format 999,999,999
+col "Miss rate %" format 999.0
+col gets format 99,999,990 heading 'Gets'
+col getmisses format 9,999,990 heading 'Misses'
+
+select unique parameter "Cache entry",
+gets, getmisses,
+getmisses/(gets+getmisses+.001)*100 "Miss rate %"
+from v$rowcache
+where gets > 100000
+or getmisses/(gets+getmisses+.001)*100 > 4.999
+or parameter in ('dc_table_grants', 'dc_user_grants')
+or (parameter = 'dc_users' and type='PARENT')
+order by 2 desc
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Miss rate percentage for dc_table_grants, dc_user_grants and dc_users
+prompt should be well under 5% each.
+prompt
+prompt Tune dictionary cache with SHARED_POOL_SIZE.
+prompt
+prompt Default init.ora values for SHARED_POOL_SIZE are 3.5M (small),
+prompt 6M (medium), 9M (large).
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+col value format 999,999,999,999
+set heading off
+
+select 'For this instance, shared_pool_size is:',
+to_number(value) value
+from v$parameter where name like 'shared_pool_size'
+/
+set heading on
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt LIBRARY CACHE (v$librarycache)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Overall Library Cache Pin Hit Ratio:
+prompt (Increase SHARED_POOL_SIZE to improve this value).
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col pins heading 'TOTAL|PINS'
+col reloads heading 'TOTAL|RELOADS'
+col "100*sum(pins)/(sum(pins)+sum(reloads))" format 999.90 heading 'PIN %'
+
+select sum(pins) "PINS", sum(reloads) "RELOADS",
+100*sum(pins)/(sum(pins)+sum(reloads))
+from v$librarycache
+/
+prompt The following individual library cache entries have reloads <> 0
+prompt or hitratio < .80.
+prompt Want GET and PIN HITRATIOS > 80%, RELOADS/PINS+RELOADS < 1%
+
+compute sum of reloads on report
+break on report
+col gethitratio format 9.99 heading 'GET|HIT|RATIO'
+col pinhitratio format 9.99 heading 'PIN|HIT|RATIO'
+col invalidations format 99990 heading 'INVAL'
+col gets format 99999990
+col "100*reloads/(pins+reloads)" format 999.0 heading 'REL/R+P(%)'
+
+select namespace, gets, gethitratio, pins, pinhitratio, reloads, 
+invalidations,
+100*reloads/(pins+reloads)
+from v$librarycache
+where reloads <> 0
+or gethitratio < .8
+or pinhitratio < .8
+order by reloads desc
+/
+clear computes
+
+prompt If RELOADS is too large, it may help to increase the OPEN_CURSORS
+prompt parameter, which specifies the max. number of cursors allowed for
+prompt each session. The default value is 50.
+
+set heading off
+
+select 'For this instance, open_cursors is: '||value
+from v$parameter where name like 'open_cursors';
+
+set heading on
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt WAITS (v$waitstat, v$system_event)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt This shows block contention statistics, and may indicate the need for
+prompt additional resources such as rollback segments, freelists, or data 
+block prompt buffers.
+prompt Waits for Undo relate to rollback (segment header or data blocks).
+prompt A buffer_busy_waits-to-logical_reads ratio of > than 4% is a problem.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col event format a17
+col "50*sum(a.total_waits)/sum(b.value)" format 90.990 heading 'BUFFER BUSY 
+WAITS / LOGICAL READS (%)'
+
+select total_waits "BUFFER BUSY WAITS"
+from v$system_event
+where event='buffer busy waits'
+/
+select sum(value) "LOGICAL READS"
+from v$sysstat
+where name in ('consistent gets', 'db block gets')
+/
+select 50*sum(a.total_waits)/sum(b.value)
+from v$system_event a, v$sysstat b
+where a.event='buffer busy waits'
+and b.name in ('consistent gets', 'db block gets')
+/
+prompt Buffer Busy Waits by class:
+compute sum of "Total Waits" on report
+
+break on report
+col "Total Waits" format 999,999,990
+col "Total Time Waited" format 999,999,999
+
+select class, count "Total Waits", time "Total Time Waited"
+from v$waitstat
+order by count desc
+/
+clear computes
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt LATCHES
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Want Hit Ratio high, Sleeps low, esp. for cache_buffers_lru_chain,
+prompt enqueues, redo_allocation and redo_copy.
+prompt Redo_allocation and redo_copy are also discussed later.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col name format a24 heading 'Latch Name'
+col Hit_R format 999.0
+col sleeps/(misses+.01) format 999.0 heading 'SLEEP/MISS'
+col misses format 99999999
+col sleeps format 9999999
+col gets format 999999990
+
+select name, gets, misses, (100*gets)/(gets+misses+.001) "Hit_R",
+sleeps, sleeps/(misses+.01)
+from v$latch
+where gets+misses <> 0
+order by 4 desc, 2 desc
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Parse Ratio is (parse count)/(cumulative opened cursors).
+prompt It usually falls between 1.15 and 1.45. A higher value is usually a
+prompt sign of poorly written Pro* programs or unoptimized SQL*Forms 
+application
+prompt
+prompt Recursive Call Ratio is (recursive calls)/(cumulative opened 
+cursors).
+prompt It will usually be between
+prompt ..... 7.0 - 10.0 for Tuned Production Systems
+prompt ..... 10.0 - 14.5 for Tuned Development Systems
+prompt
+prompt Buffer (Cache Hit) Ratio was calculated earlier in the report. It 
+shows the
+prompt percentage of logical reads (from the SGA) to total reads. The hit 
+ratio
+prompt can be raised by increasing DB_BLOCK_BUFFERS (which increases SGA 
+size)
+prompt By turning on the "Virtual Buffer Manager" you can determine the 
+change
+prompt in hit rate by adding/subtracting buffers. This function is enabled 
+by
+prompt DB_BLOCK_LRU_EXTENDED_STATISTICS and/or DB_BLOCK_LRU_STATISTICS.
+prompt These should be disabled during normal operation.
+prompt
+prompt Read/Write Ratio is physical_blocks_read/physical_blocks_written.
+prompt Blocks Per Long Table Scan is:
+prompt (table_scan_blocks_gotten-4*short_table_scans)/long_table_scans.
+prompt Recursive_Calls/User_Calls should be < 10%
+prompt
+prompt RATIOS FOR THIS INSTANCE:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col pcc format 999999.99 heading 'Parse|Ratio'
+col rcc format 9999999.99 heading 'Recsv|Cursr'
+col hr format 990.0 heading 'Buffer|Ratio'
+col rwr format 999,999.9 heading 'Rd/Wr|Ratio'
+col bpfts format 999,999,990 heading 'Blks per|Long TS'
+col rcpuc format 999990.0 heading 'RcrsvC per|UserC (%)'
+
+select sum(decode(a.name,'parse count',value,0)) /
+sum(decode(a.name,'cumulative opened cursors',value,1)) pcc ,
+sum(decode(a.name,'recursive calls',value,0)) /
+sum(decode(a.name,'cumulative opened cursors',value,1)) rcc ,
+100*(1 - (sum(decode(a.name,'physical reads',value,0)) /
+(sum(decode(a.name,'db block gets',value,1)) +
+sum(decode(a.name,'consistent gets',value,0))))) hr ,
+sum(decode(a.name,'physical reads',value,0)) /
+sum(decode(a.name,'physical writes',value,0)) rwr ,
+(sum(decode(a.name,'table scan blocks gotten',value,0))
+- sum(decode(a.name,'table scans (short tables)',value,0)) * 4)
+/ sum(decode(a.name,'table scans (long tables)',value,0)) bpfts,
+100*sum(decode(a.name,'recursive calls',value,0)) /
+sum(decode(a.name,'user calls',value,.01)) rcpuc
+from v$sysstat a , v$statname b
+where a.statistic# = b.statistic#
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Recursive calls occur because of cache misses and segment extension
+prompt (table, index, rollback and temporary).
+prompt If the dictionary cache has been optimized (see earlier section),
+prompt segments should be rebuilt into fewer extents.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt To reduce dynamic space allocation, the initial extent of the
+prompt temporary tablespace should be sufficient to hold at least one sort
+prompt run from memory. The most effective default storage size for the
+prompt temporary tablespace is (1 block + N*sort_area_size).
+prompt Another, perhaps easier, way of doing this is to make
+prompt sort_area_size=(init_extent_of_temp_tablespace-1 block)/N.
+
+col value format 999,999,999
+set heading off
+
+select 'For this instance, sort_area_size is:', to_number(value) value
+from v$parameter
+where name like 'sort_area_size'
+/
+col name format a16
+col value format 999,999,999
+
+prompt For this instance, sort data is:
+set heading off
+
+select a.name, value
+from v$statname a , v$sysstat
+where a.statistic# = v$sysstat.statistic#
+and a.name in ('sorts (disk)','sorts (memory)','sorts (rows)')
+/
+set heading on
+col segment_name format a36 heading 'OBJECT > 1 Mbyte'
+col mbytes format 999,999.90 heading 'Mbytes|SIZE'
+
+select segment_name, bytes/1024/1024 mbytes
+from sys.dba_segments
+where owner not in ('SYS', 'SYSTEM', 'ORADBA')
+and bytes/1024/1024 > 1
+order by bytes desc
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Row chaining can be detected by looking at "table fetch continued 
+row".
+prompt The ANALYZE TABLE table_name LIST CHAINED ROWS command is useful.
+prompt Chaining should be avoided "at all costs", because it doubles the I/O
+prompt needed to retrieve the data.
+prompt Chaining can happen because: (1) the data in a single row is too long
+prompt to fit in a data block, or (2) PCTFREE value for the table is not 
+correct
+prompt For this instance:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col value format 9,999,999,990 heading 'VALUE'
+col name format a26
+
+select name, value
+from v$sysstat
+where name like 'table fetch%'
+or name = 'table scan rows gotten'
+/
+prompt Would like to see %_continued_row well under 1%. For this instance it 
+is:
+
+col pctcr format 90.990 heading '% CONTINUED ROW'
+
+
+select 100 * sum (decode (a.name,'table fetch continued row',value,0)) /
+(sum (decode (a.name,'table scan rows gotten',value,1)) +
+sum (decode (a.name,'table fetch by rowid',value,0))) pctcr
+from v$sysstat a
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt The value of PROCESSES should be higher than the number of background
+prompt processes plus the number of simultaneous users.
+prompt Consider setting DML_LOCKS up to 10 times the number of concurrent 
+users.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+set heading off
+
+select 'The value of processes is: '||value
+from v$parameter
+where name like 'processes'
+/
+select 'The highest # of concurrent user sessions since the instance started 
+is: '||sessions_highwater
+from v$license
+/
+select 'The value of dml_locks is: '||value
+from v$parameter
+where name like 'dml_locks'
+/
+set heading on
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Following ratio should be "low". If it's not, increase 
+ENQUEUE_RESOURCES.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col ratio format 0.9990 heading 'enqueue timeouts/|enqueue requests'
+
+select a.value/b.value ratio
+from v$sysstat a, v$sysstat b
+where a.name = 'enqueue timeouts'
+and b.name = 'enqueue requests'
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Temporary tablespaces pointed to by users: (should NEVER be SYSTEM)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col username format a20
+col default_tablespace format a25
+col temporary_tablespace format a25
+col knt format 9,990 heading 'Count'
+
+select temporary_tablespace, count(*) knt
+from dba_users
+group by temporary_tablespace
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Default tablespaces pointed to by users other than SYS, SYSTEM and 
+SCOTT:
+prompt (should NEVER be SYSTEM, TEMP, RBS or TOOLS)
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+select default_tablespace, count(*) knt
+from dba_users
+where username not in ('SYSTEM', 'SYS', 'SCOTT')
+group by default_tablespace
+/
+select username, default_tablespace, temporary_tablespace
+from dba_users
+where temporary_tablespace != 'TEMP'
+order by 2,3,1
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt The following shows which users have quotas on which tablespaces.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col username format a15 heading 'USER'
+col tablespace_name format a25 heading 'TABLESPACE'
+col bytes format 999,999,999 heading 'Quota in Bytes';
+col blocks format 999,999 heading 'Quota in Blocks';
+
+select username, tablespace_name, bytes,blocks
+from dba_ts_quotas
+order by tablespace_name
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt The following objects have more than 3 extents:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col owner format a7
+col segment_name format a20 heading 'SEGMENT NAME'
+col segment_type format a8 heading 'TYPE'
+col bytes format 99,999,999 heading 'Kbytes'
+col extents format 999 heading 'EXT'
+col max_extents format 999 heading 'MAX'
+col init_ext format 999,999 heading 'Kbytes|INIT EXT'
+col next_ext format 999,999 heading 'Kbytes|NEXT EXT'
+
+select owner,segment_name, segment_type, bytes/1024 bytes,
+initial_extent/1024 init_ext, next_extent/1024 next_ext,
+extents, max_extents
+from sys.dba_segments
+where owner != 'SYS'
+and extents > 3
+order by max_extents desc, extents desc
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt Segments near their maximum extension:
+prompt (to see segments witch are within 20 percent of their max extension,
+prompt set the multiplier to 1.2).
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col owner format a7
+col segment_name format a35 heading 'SEGMENT NAME'
+col bytes format 99,999,999 heading 'Kbytes';
+
+select owner, segment_name, segment_type, extents, bytes/1024 bytes
+from sys.dba_segments s
+where
+(s.segment_type = 'TABLE' and exists
+(select 'x' from dba_tables t
+where t.owner = s.owner
+and t.table_name = s.segment_name
+and t.max_extents <= s.extents ))
+or
+(s.segment_type = 'INDEX' and exists
+(select 'x' from dba_indexes i
+where i.owner = s.owner
+and i.index_name = s.segment_name
+and i.max_extents <= s.extents ))
+or
+(s.segment_type = 'ROLLBACK' and exists
+(select 'x' from dba_rollback_segs r
+where r.owner = s.owner
+and r.segment_name= s.segment_name
+and r.max_extents <= s.extents ))
+order by 1,2
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt The following compares the maximum next_extent for objects in a given
+prompt tablespace with the maximum chunk of free space in that tablespace:
+prompt MAX_NEXT_EXTENT > MAX_CHUNK is a problem.
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col "MAX NEXT_EXTENT" format 999,999.90 heading "Mbytes|MAX NEXT EXT"
+col "MAX CHUNK" format 999,999.90 heading "Mbytes|MAX CHUNK"
+
+select a.tablespace_name, max(a.next_extent)/1024/1024 * 2 "MAX 
+NEXT_EXTENT",
+max(b.bytes)/1024/1024 "MAX CHUNK"
+from sys.dba_segments a, sys.dba_free_space b
+where a.tablespace_name=b.tablespace_name
+and owner not in ('SYS', 'SYSTEM')
+group by a.tablespace_name
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt The following compares Allocated Space and Free Space in each 
+datafile:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col tablespace_name format a14 heading TABLESPACE
+col allocated format 999,999 heading "Mbytes|ALLOCATED"
+col free format 999,999 heading "Mbytes|FREE"
+col "%_FREE" format 999.9
+compute sum of allocated free on report
+
+select a.file_id, a.tablespace_name, a.bytes/1024/1024 "ALLOCATED",
+sum(b.bytes)/1024/1024 "FREE",
+round ((sum(b.bytes)/a.bytes),3) *100 "%_FREE", count(*) "# OF CHUNKS"
+from sys.dba_data_files a, sys.dba_free_space b
+where a.file_id = b.file_id
+and a.tablespace_name=b.tablespace_name
+group by a.file_id, a.tablespace_name, a.bytes
+/
+set ver on
+clear computes
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt MULTI-THREADED/PARALLEL SERVER:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+select name, (idle/ (busy + idle)) * 100
+from v$dispatcher
+/
+select paddr, type, queued, wait, totalq, wait/totalq avg_wait_time
+from v$queue
+/
+select name, status, idle/6000, busy/6000, requests
+from v$shared_server
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt V$PARAMETER:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col num format 990
+col name format a41 heading 'PARAMETER NAME'
+col value format a33 heading 'VALUE'
+
+select num, name, value
+from v$parameter
+order by name
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt V$SYSSTAT:
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+col statistic# format 9990 heading 'STAT#'
+col name format a51 heading 'STATISTIC NAME'
+col value format 9,999,999,999,990 heading 'VALUE'
+
+select a.statistic#, a.name, value
+from v$statname a, v$sysstat
+where a.statistic# = v$sysstat.statistic#
+and value > 0
+order by a.name
+/
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+prompt MONITOR OPTION - V$ Tables:
+prompt Process ................v$process
+prompt Session ................v$session, v$process, v$access, 
+v$session_event,
+prompt 
+........................v$session_wait,v$sesstat,v$session_cursor_cache
+prompt ........................v$sess_io, v$statname
+prompt Table ..................v$access
+prompt SQL Area ...............v$sqlarea
+prompt Library Cache ..........v$librarycache
+prompt Latch ..................v$latch, v$latchname, v$latchholder
+prompt Lock ...................v$lock, v$_lock, v$session
+prompt Rollback: .............v$rollname, v$rollstat, undo$, v$transaction
+prompt Redo Logs ..............v$log, v$logfile, v$loghist, v$log_history
+prompt System I/O .............v$process, v$session
+prompt File I/O ...............v$dbfile, v$filestat, v$waitstat
+prompt Statistic: system.......v$sysstat
+prompt Statistic: session......v$sesstat, v$session, v$sysstat
+prompt Multi-threaded: queue...v$queue
+prompt MT: circuit ............v$circuit,v$dispatcher, 
+v$shared_server,v$session
+prompt MT: dispatcher .........v$dispatcher
+prompt MT: shared server ......v$shared_server
+prompt Backup/Recovery 
+........v$archive,v$backup,v$recovery_log,v$recovery_file
+prompt Caches .................v$db_object_cache,v$library_cache,v$rowcache
+prompt Cursors/SQL statmnt ....v$open_cursor, v$sqlarea, v$sqltext
+prompt Direct Loader ..........v$loadcstat, v$loadstat
+prompt Parameters .............v$nls_parameters,v$parameter,v$mls_parameter
+prompt Parallel Query .........v$pq_sesstat, v$pq_slave, v$pq_sysstat
+prompt Overall System .........v$sysstat, v$system_cursor_cache, 
+v$system_event
+prompt General ................v$bgprocess, v$database, 
+v$enabledprivs,v$sgastat
+prompt 
+........................v$option,v$compatibility,v$datafile,v$fixed_table
+prompt 
+........................v$reqdist,v$timer,v$compatseg,v$dbfile,v$instance
+prompt 
+........................v$resource,v$type_size,v$controlfile,v$dblink,
+prompt ........................v$license,v$sga,v$version
+prompt 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+prompt ******************************* End of Report 
+***************************
+spool off
+exit

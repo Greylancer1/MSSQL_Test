@@ -1,0 +1,2 @@
+RESTORE LOG SXAREPLP FROM DISK = '\\sxasqlmp\Archive\SXAProd\SXAProd_TLog2.trn' WITH RECOVERY
+GO

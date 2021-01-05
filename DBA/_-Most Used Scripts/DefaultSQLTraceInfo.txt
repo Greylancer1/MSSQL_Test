@@ -1,0 +1,1 @@
+select * from sys.traces where is_default = 1

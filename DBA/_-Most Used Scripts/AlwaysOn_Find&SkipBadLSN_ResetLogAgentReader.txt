@@ -1,0 +1,34 @@
+--Find stuck lsn
+DBCC OPENTRAN
+	-- Create the temporary table to accept the results.  
+	CREATE TABLE #OpenTranStatus (  
+		ActiveTransaction varchar(25),  
+		Details sql_variant   
+		);  
+	-- Execute the command, putting the results in the table.  
+	INSERT INTO #OpenTranStatus   
+		EXEC ('DBCC OPENTRAN WITH TABLERESULTS, NO_INFOMSGS');  
+	-- Display the results.  
+	SELECT * FROM #OpenTranStatus;  
+	GO  
+
+--Check for 'replication' wait status on the affected db
+SELECT arcs.replica_server_name, d.name, d.log_reuse_wait_desc, drs.log_send_queue_size,drs.redo_queue_size
+FROM master.sys.databases d
+INNER JOIN master.sys.dm_hadr_database_replica_states drs
+ON d.database_id=drs.database_id
+INNER JOIN master.sys.dm_hadr_availability_replica_cluster_states arcs
+ON drs.replica_id=arcs.replica_id
+ORDER BY name ASC
+
+--Lotsa entries all with a status of 2 is bad
+DBCC LOGINFO
+
+--Reset Log Reader Agent
+EXEC sp_repldone @xactid = NULL, @xact_segno = NULL, @numtrans = 0, @time = 0, @reset = 1; 
+
+--Flush Log to disk
+CHECKPOINT
+
+--Display Log size and usage
+DBCC SQLPERF('LOGSPACE') 

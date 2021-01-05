@@ -1,0 +1,1 @@
+SELECT * FROM SYSPROCESSES WHERE waittime>0 and spid>50

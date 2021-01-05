@@ -1,0 +1,207 @@
+USE [DPMDB]
+GO
+
+/****** Object:  StoredProcedure [dbo].[PurgeJunk]    Script Date: 8/5/2019 10:03:24 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[PurgeJunk] @ServerName nvarchar(75)
+AS
+DECLARE @ServerID nvarchar(75)
+--DECLARE @VolumeID nvarchar(75)
+--DECLARE @DatasourceID nvarchar(75)
+
+PRINT @ServerName
+
+SET @ServerID = (SELECT [ServerId]
+  FROM [DPMDB_VMTDPM02].[dbo].[tbl_AM_Server]
+  WHERE ServerName = @ServerName)
+
+PRINT @ServerID
+
+DELETE
+--SELECT COUNT(*), 'PossibleOwners'
+FROM tbl_AM_RG_PossibleOwners
+WHERE @ServerID = RGServerID
+OR
+@ServerID = NodeServerID
+
+DELETE
+--SELECT COUNT(*), 'RGVNMapping'
+FROM tbl_AM_RGVNMapping
+WHERE @ServerID = RGServerID
+
+IF --Multiple volume ID's temp table
+((SELECT COUNT(*) FROM tbl_IM_Volume WHERE @ServerID = [ServerID]) <> 0)
+	BEGIN
+	SELECT [VolumeId] INTO #Volumes FROM tbl_IM_Volume
+		WHERE @ServerID = [ServerID]
+
+	Delete
+	--SELECT COUNT(*), 'DatasourceVolume' 
+		FROM tbl_IM_DatasourceVolume WHERE VolumeID IN (SELECT [VolumeID] FROM #Volumes)
+	
+	DROP TABLE #Volumes
+	END
+	
+	/*BEGIN
+		SET @VolumeID = (SELECT [VolumeId]
+		FROM tbl_IM_Volume
+		WHERE @ServerID = ServerID)
+
+		--DELETE
+		SELECT COUNT(*), 'DatasourceVolume' 
+		FROM tbl_IM_DatasourceVolume WHERE @VolumeID = VolumeID
+	END*/
+
+DELETE
+--SELECT COUNT(*), 'Volume'
+FROM tbl_IM_Volume
+WHERE @ServerID = [ServerID]
+
+IF --Multiple data source ID's temp table
+((SELECT COUNT(*) FROM tbl_AM_InstalledAgent WHERE @ServerID = [ServerID]) <> 0)
+	BEGIN
+	SELECT [AgentId] INTO #AgentIds FROM tbl_AM_InstalledAgent
+		WHERE @ServerID = [ServerID]
+
+	Delete
+		FROM dbo.tbl_Agent_Alerts WHERE AgentId IN (SELECT * FROM #AgentIds)
+		
+	DROP TABLE #AgentIds
+	END
+
+DELETE
+--SELECT COUNT(*), 'InstalledAgent'
+FROM tbl_AM_InstalledAgent
+WHERE @ServerID = [ServerID]
+
+DELETE
+--SELECT COUNT(*), 'ServerTimezone'
+FROM tbl_AM_ServerTimezone
+WHERE @ServerID = [ServerID]
+
+IF --Multiple data source ID's temp table
+((SELECT COUNT(*) FROM tbl_IM_DataSource WHERE @ServerID = [ServerID]) <> 0)
+	BEGIN
+	SELECT [DataSourceId] INTO #DataSources FROM tbl_IM_DataSource
+		WHERE @ServerID = [ServerID]
+
+	Delete
+	--SELECT COUNT(*), 'MountPoint' 
+		FROM tbl_IM_DPMDatasourceReplicaProperties WHERE DataSourceID IN (SELECT [DataSourceID] FROM #DataSources)
+
+	Delete
+	--SELECT COUNT(*), 'MountPoint' 
+		FROM tbl_IM_DatasourceVolume WHERE DataSourceID IN (SELECT [DataSourceID] FROM #DataSources)
+
+	Delete
+	--SELECT COUNT(*), 'MountPoint' 
+		FROM tbl_IM_MountPoint WHERE DataSourceID IN (SELECT [DataSourceID] FROM #DataSources)
+
+	Delete
+	--SELECT COUNT(*), 'DataSourceCapability' 
+		FROM tbl_IM_DatasourceCapability WHERE DataSourceID IN (SELECT [DataSourceID] FROM #DataSources)
+
+	Delete
+		FROM tbl_IM_ProtectedObject WHERE DataSourceID IN (SELECT [DataSourceID] FROM #DataSources)
+
+	Delete
+		FROM tbl_RM_ReplicaTrail WHERE DataSourceID IN (SELECT [DataSourceID] FROM #DataSources)
+
+	Delete
+		FROM dbo.tbl_RM_ReplicaTrail WHERE DataSourceID IN (SELECT [DataSourceID] FROM #DataSources)
+
+	Delete
+		FROM tbl_IM_SqlProperties WHERE DataSourceID IN (SELECT * FROM #DataSources)
+
+	--Delete
+	--	FROM tbl_PRM_StopProtectionAlert WHERE DataSourceID IN (SELECT * FROM #DataSources)
+		
+	DROP TABLE #DataSources
+	END
+/*ELSE
+	BEGIN
+		SET @DataSourceID = (SELECT [DataSourceId]
+		FROM tbl_IM_DataSource
+		WHERE @ServerID = [ServerID])
+
+		PRINT @DataSourceID
+
+		--DELETE
+		SELECT COUNT(*), 'MountPoint' 
+		FROM tbl_IM_MountPoint WHERE @DataSourceID = DataSourceID
+
+		--DELETE
+		SELECT COUNT(*), 'DataSourceCapability' 
+		FROM tbl_IM_DatasourceCapability WHERE @DataSourceID = DataSourceID
+	END */
+
+DELETE
+--SELECT COUNT(*), 'DataSource'
+FROM tbl_IM_DataSource
+WHERE @ServerID = [ServerID]
+
+DELETE
+--SELECT COUNT(*), 'ProtectedObject'
+FROM tbl_IM_ProtectedObject
+WHERE @ServerID = [ServerID]
+
+IF --Multiple data source ID's temp table
+((SELECT COUNT(*) FROM tbl_JM_JobDefinition WHERE @ServerID = [ServerID]) <> 0)
+	BEGIN
+		SELECT [JobDefinitionId] INTO #JobDefinitions FROM tbl_JM_JobDefinition
+			WHERE @ServerID = [ServerID]
+
+				SELECT JobId INTO #JobIds FROM dbo.tbl_JM_JobTrail
+					WHERE [JobDefinitionId] IN (SELECT [JobDefinitionId] FROM #JobDefinitions)
+
+							SELECT TaskDefinitionId INTO #TaskDefIds FROM tbl_JM_TaskDefinition
+								WHERE [JobDefinitionId] IN (SELECT [JobDefinitionId] FROM #JobDefinitions)
+
+							Delete
+							--SELECT COUNT(*)
+							FROM tbl_PRM_StopProtectionAlert WHERE [TaskDefId] IN (SELECT [TaskDefinitionId] FROM #TaskDefIds)
+
+							DROP Table #TaskDefIds
+
+				Delete
+				--SELECT COUNT(*)
+				FROM dbo.tbl_TE_TaskTrail WHERE [JobId] IN (SELECT [JobId] FROM #JobIds)
+
+				DROP TABLE #JobIds
+		
+		Delete
+		--SELECT COUNT(*)
+		FROM tbl_JM_JobTrail WHERE [JobDefinitionId] IN (SELECT [JobDefinitionId] FROM #JobDefinitions)
+		
+		Delete
+		--SELECT COUNT(*)
+		FROM tbl_SCH_ScheduleDefinition WHERE [JobDefinitionId] IN (SELECT [JobDefinitionId] FROM #JobDefinitions)
+		
+		Delete
+		--SELECT COUNT(*)
+		FROM tbl_JM_TaskDefinition WHERE [JobDefinitionId] IN (SELECT [JobDefinitionId] FROM #JobDefinitions)
+
+		Delete
+		--SELECT COUNT(*)
+		FROM tbl_JM_JobTrail WHERE [JobDefinitionId] IN (SELECT [JobDefinitionId] FROM #JobDefinitions)
+		
+		DROP TABLE #JobDefinitions
+	END
+
+DELETE
+--SELECT COUNT(*), 'ProtectedObject'
+FROM tbl_JM_JobDefinition
+WHERE @ServerID = [ServerID]
+
+DELETE
+FROM tbl_AM_Server
+WHERE ServerName = @ServerName
+
+
+GO

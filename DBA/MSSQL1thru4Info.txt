@@ -1,0 +1,24 @@
+MSSQL1
+Hardware: HP Netserver - US23541077
+OS: MS Windows 2000
+SQL: MSSQL 2000
+Apps: Labtracker, ChompCEO, Teleform, QCDAO
+
+MSSQL2
+Hardware: Compaq ProLiant DL580 G2 - D245FRK1D198
+OS: MS Windows 2000
+SQL: MSSQL 2000
+Apps: DataRetrievalToolbar, eDelineate, eXpress, AMPFM Reports, ITSM, MSO, IT Turnover, Spectrasoft
+
+MSSQL3
+Hardware: Compaq ProLiant 1850R
+OS: MS Windows 2000
+SQL: MSSQL 2000
+Apps: ActTrack, IRIMS, CHOMP_Sec
+
+MSSQL4
+Hardware: Compaq ProLiant BL20p G3 - M013NFG163
+OS: MS Windows 2003
+SQL: MSSQL 2000
+Apps: Geonetric (CHOMP Intranet), Credant
+

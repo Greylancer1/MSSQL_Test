@@ -1,0 +1,1 @@
+tablediff -strict -f sysjobssync.sql -sourceserver DEV -sourcedatabase msdb -sourceschema dbo -sourcetable sysjobs -destinationserver PROD -destinationdatabase msdb -destinationschema dbo -destinationtable sysjobs

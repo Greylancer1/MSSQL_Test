@@ -1,0 +1,4 @@
+--Run against the 'distribution' db
+EXEC sp_helpsubscriptionerrors 'SXASQL55MP','SXA55P','ECLP_Reporting_SXA55P','SXAREPL55P','SXA55P'
+--Run against subscriber db (SXA55P on SXAREPL55P)
+EXEC sp_setsubscriptionxactseqno 'SXASQL55MP','SXA55P','ECLP_Reporting_SXA55P',0x00015FE80005B2C0010800000000

@@ -1,0 +1,50 @@
+IF OBJECT_ID('dbo.spTrapWho') IS NOT NULL
+DROP PROCEDURE dbo.spTrapWho
+GO
+
+CREATE PROCEDURE dbo.spTrapWho
+AS
+/*************************************************************** 
+Creation Date: 03/22/02 Created By: Randy Dyess
+Web Site: www.TransactSQL.Com
+Email: RandyDyess@TransactSQL.Com
+Purpose: Trap the output of sp_who2
+Location: master database
+Output Parameters: None
+Return Status: None
+Called By: None 
+Calls: None
+Data Modifications: None
+Updates: None 
+Date Author Purpose 
+---------- -------------------------- ---------------------------- 
+***************************************************************/
+SET NOCOUNT ON
+IF OBJECT_ID('dbo.tSPWho') IS NULL
+BEGIN
+CREATE TABLE tSPWho
+(
+spid INTEGER NULL
+,status VARCHAR(100) NULL
+,login SYSNAME NULL
+,hostname SYSNAME NULL
+,blkby VARCHAR(10) NULL
+,dbname SYSNAME NULL
+,command VARCHAR(100) NULL
+,cputime INTEGER NULL
+,diskio INTEGER NULL
+,lastbatch VARCHAR(50) NULL
+,programname SYSNAME NULL
+,spid2 INTEGER NULL
+)
+
+INSERT INTO tSPWho
+EXEC dbo.sp_Who2
+END
+ELSE
+BEGIN
+INSERT INTO tSPWho
+EXEC dbo.sp_Who2
+END
+
+GO
