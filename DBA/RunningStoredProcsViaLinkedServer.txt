@@ -1,6 +1,0 @@
-OPENQUERY does not accept variables for its arguments.
-
-OPENQUERY cannot be used to execute extended stored procedures on a linked server. However, an extended stored procedure can be executed on a linked server by using a four-part name. For example:
-
-Copy
- EXEC SeattleSales.master.dbo.xp_msver

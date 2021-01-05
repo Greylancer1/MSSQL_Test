@@ -1,1 +1,0 @@
-csvde.exe -f exportadinfo.csv -r (objectClass=user) -l cn,department,memberOf,displayName,mail,givinName,physicalDeliveryOfficeName,title,objectClass

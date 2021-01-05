@@ -1,1 +1,0 @@
-SELECT name, createdate FROM master..syslogins  

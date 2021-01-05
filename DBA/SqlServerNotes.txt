@@ -1,1 +1,0 @@
-Lifescan- desktop SQL Server addition- scripted backups and database maintenance.  No sys admin access.

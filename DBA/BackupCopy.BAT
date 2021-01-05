@@ -1,1 +1,0 @@
-XCOPY \\sxasqlmp\ArchiveMA\SXAProd\SXAProd.BAK C:\Temp

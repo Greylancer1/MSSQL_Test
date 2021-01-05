@@ -1,9 +1,0 @@
-When you are running from your desktop, the DTS package is running with your
-SQL and domain rights. When it is scheduled, it is running with one of two
-sets of rights:
-1. If the job is owned by a sysadmin, DTS runs as the account that SQL
-Server runs under.
-2. If the job is not owned by a sysadmin, DTS runs as the SQL Agent proxy
-account.
-
-http://support.microsoft.com/kb/269074 has a discussion of the details.
