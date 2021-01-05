@@ -1,0 +1,17 @@
+DBCC SQLPERF(umsstats)
+SELECT *, counter_name AS Expr1
+FROM master..sysperfinfo
+WHERE (counter_name = N'User Connections')
+
+For
+http://www.mssqlcity.com/Tips/tipSrvSet.htm
+http://www.devarticles.com/c/a/SQL-Server/How-to-Perform-a-SQL-Server-Performance-Audit/5/
+http://www.sql-server-performance.com/sql_server_configuration_settings.asp
+http://searchsqlserver.techtarget.com/tip/1,289483,sid87_gci1118085,00.html
+http://www.lazydba.com/sql/1__6768.html
+
+Against
+http://blogs.msdn.com/khen1234/archive/2005/11/07/489778.aspx
+http://www.microsoft.com/technet/technetmag/issues/2005/01/SQLQA/default.aspx
+http://support.microsoft.com/kb/319942/
+http://blogs.msdn.com/darien/archive/2006/06/04/616653.aspx

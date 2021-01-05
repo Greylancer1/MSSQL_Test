@@ -1,0 +1,16 @@
+BEGIN TRAN
+UPDATE BlockAlertCheck
+SET test = 'is not'
+WHERE Id = 2
+
+
+UPDATE BlockAlertCheck
+SET test = 'is'
+WHERE Id = 2
+
+
+
+
+UPDATE BlockAlertCheck
+SET test = 'is not'
+WHERE Id = 2

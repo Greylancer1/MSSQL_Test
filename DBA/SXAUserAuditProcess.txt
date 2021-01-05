@@ -1,0 +1,33 @@
+1.  First pull data from SXA into MSSQL2 SXAUser table.
+TRUNCATE TABLE SXAUsers
+SELECT DISTINCT dbo.CV3User.FirstName, dbo.CV3User.LastName, dbo.CV3User.IDCode, dbo.CV3OrganizationalUnit.Name, dbo.CV3User.OccupationCode
+FROM         dbo.CV3OrganizationalUnit RIGHT OUTER JOIN
+                      dbo.CV3User ON dbo.CV3OrganizationalUnit.GUID = dbo.CV3User.OrgUnitGUID
+WHERE     (dbo.CV3User.Active = 'true') AND (dbo.CV3User.IDCode IS NOT NULL)
+
+2.  Match on username between Kronos users and SXA users via SecurityAudit view (export to Excel as UsersActiveInSXAandKronos.xls).
+SELECT     dbo.SecurityAudit.FirstName, dbo.SecurityAudit.LastName, dbo.SecurityAudit.Username, dbo.SecurityAudit.Dept AS KronosDept, dbo.SXAUsers.Name AS SXADept, dbo.SecurityAudit.jobname AS KronosJob, dbo.SXAUsers.OccupationCode AS SXAJob
+FROM         dbo.SXAUsers INNER JOIN
+                      dbo.SecurityAudit ON dbo.SXAUsers.IDCode = dbo.SecurityAudit.Username
+
+3.  Find all SXA users not in Kronos (export to Excel as UsersActiveInSXAnotKronos.xls)
+SELECT DISTINCT * FROM SXAUsers
+WHERE IDCode NOT IN (SELECT DISTINCT Username FROM SecurityAudit) 
+
+
+
+MISC.
+SELECT COUNT(*) FROM SXAUsers
+WHERE IDCode NOT IN (SELECT Username FROM SecurityAudit) AND IDCode is NOT null
+
+SELECT COUNT(*) FROM SXAUsers
+WHERE IDCode IN (SELECT Username FROM SecurityAudit) OR IDCode is null
+
+SELECT COUNT(*) FROM SXAUSERS
+
+SELECT COUNT(*) FROM SXAUsers
+WHERE IDCode is null
+
+SELECT DISTINCT * FROM SXAUsers
+WHERE IDCode NOT IN (SELECT DISTINCT Username FROM SecurityAudit) 
+

@@ -1,0 +1,173 @@
+When and Why use them
+
+Provides information that was not available in previous version of sql server
+Provides a simpler way to query the data just like any other view versus using DBCC commands or system stored procedures
+
+Types of DMVs
+
+change data capture
+common language runtime
+database mirroring
+database
+execution
+full-text search
+I/O
+Index
+Object
+Query notifications
+Replication
+Resource governor
+SQL Operating System
+Get a list of all DMOs
+ 
+Permissions
+
+select name, type_desc from sys.all_objects where name like 'dm%' order by name
+ 
+
+Server scoped
+-- view server state
+database scoped
+--view database state
+
+Deny takes prescedence
+deny state or deny select on an object
+
+People should have sys admin privileges
+
+Grant permissions
+grant view server state to loginname
+grant view database state to user
+
+deny view server state to loginname
+deny view database state
+
+must create user in master first
+
+Specific types of DMVs
+
+database
+execution
+IO
+Index
+SQL operatng system
+
+Database
+for page and row count
+select object_name(object_id) as objname, * from sys.dm_db_partition_stats order by 1
+
+Tips 1851 -- mssqltips.com
+
+Execution--- (when sql server is restart everything is reset)
+
+sys.dm_exec_sessions
+-- info about all active user connections and internal tasks
+sys.dm_exec_connections
+-- info about connections established
+sys.dm_exec_requests
+-- info about each request that is executing (including all system processes)
+
+Tips 1811, 1817, 1829, 1861
+
+Execution--- Query plans
+
+sys.dm_exec_sql_text
+--returns text of sql batch
+sys.dm_exec_query_plan
+--returns showplan in xml
+select * from sys.dm_exec_query_stats
+-- returns stats for cached query plans
+sys.dm_exec_cached_plans
+--each query plan that is cached
+
+Exection -- example
+select * from dm_exec_connections cross apply
+
+sys.dm_exec_sql_text(most_recent_sql_handle)
+
+select * from dm_exec_requests cross apply
+
+sys.dm_exec_sql_text(sql_handle)
+
+Select T.[text],p.[query_plan], s.[program_name],s.host_name, s.client_interface_name, s.login_name, r.* from sys_dm_exec_requests r inner join sys.dm_exec_sessions S ONs.session_id = r.session_id
+cross apply sql_text cross apply sys.dm_execsql_query_plan
+
+
+select usecounts, cacheobjype, objtype, text from sys.dm_exec_cached_plans
+cross apply dm_exec_sql_text(plan_handle)
+where usecounts > 1
+order by use cuonts desc
+
+IO
+select * sys.dm_io_pending_io_requests  can be run when you think that io can be a bottleneck
+select * from sys.dm_io_virtual_file_stats (null,null)
+select db_name(database_id), * from
+
+sys.dm_io_virtual_file_stats(null,null)
+shows io stats for data and log files  -- database id and
+
+file id -- null returns all data
+db_name is a funtion to return the name of the actual
+
+database rather than database id
+
+Index  (when sql server is restart everything is reset)
+
+
+sys.dm_dm_db_index_operational_stats (DMF)
+ -- shows io, locking and access information such as inserts, deletes, updates
+
+sys.dm_dm_db_index_physical_stats (DMF)
+ -- shows index storage and fragmaentation info,
+
+sys.dm_dm_db_index_usage_stats (DMV)
+ -- shows how often indexes are used and for what type of SQL operation
+
+Tips 1239, 1545, 1642, 1749, 1766, 1789
+
+Index examples
+
+select db_name(dtabase_id), object_name(), * from
+
+operation_stats(5,null,null,null)
+
+parameters
+databaseid, objectid, indexid, partition number
+
+select db_name(dtabase_id), object_name(), * from
+
+physical_stats(DB_ID(N'Northwind'),5,null,null,null, detaled)
+
+
+parameters
+databaseid, objectid, indexid, partition number, mode
+
+
+Missing indexes
+sys.dm_db_missing_index_details
+sys.dm_db_missing_index_groups
+sys.dm_db_missing_index_group_stats
+sys.dm_db_missing_index_columns
+
+Tip 1634
+
+SQL Operating system
+sys.dm_os_schedulers
+-- information abt processors
+
+sys.dm_os_sys_info
+-- info abt computer and abt resources available to and consumed by sql server
+
+sys.dm_os_sys_memory
+-- how memory is used overall on the server, and how much memory is available.
+
+sys.dm_os_wait_stats
+-- info abt all waits
+DBCC SQLPERF('sys.dm_os_wait_stats', CLEAR)
+
+Tips 1949
+
+sys.dm_os_buffer_descriptors
+-- info abt all data pages that are currently in the sql server buffer pool
+
+Tips 1181, 1187

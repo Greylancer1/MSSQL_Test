@@ -1,0 +1,365 @@
+USE [master]
+GO
+/****** Object:  StoredProcedure [dbo].[CHOMP_RestoreSXAProdToTestLoad]    Script Date: 09/13/2008 08:21:08 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER proc [dbo].[CHOMP_RestoreSXAProdToTestLoad]
+AS
+
+
+SET NOCOUNT ON
+
+	
+-- SET to single user, kicking everyone out, so we can restore the db
+ALTER DATABASE TestLoad SET single_user WITH rollback immediate
+		
+-- confirm the logical & physical filenames are still good
+--RESTORE FILELISTONLY FROM DISK= 'K:\MSSQL\Archive\SXAProd.bak'
+
+-- change logical filenames if needed, change physical for current backup file
+RESTORE DATABASE TestLoad FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd\SXAProd.bak'
+WITH MOVE 'CHXAP_Data' TO 'T:\MSSQL\Data\TestLoad_data.MDF',
+MOVE 'AMB' TO 'T:\MSSQL\Data\TestLoadAMB_data.ndf',
+MOVE 'DM' TO 'T:\MSSQL\Data\TestLoadDM_data.ndf',
+MOVE 'IMM' TO 'T:\MSSQL\Data\TestLoadIMM_data.ndf',
+MOVE 'CHXAP_Data2' TO 'T:\MSSQL\Data\CHXAP_Data2.ndf',
+     MOVE 'CHXAP_Log' TO 'J:\MSSQL\Log\TestLoad_log.LDF',
+		REPLACE,
+		RECOVERY
+
+-- SET to single user, kicking everyone out, so we can restore the db
+	ALTER DATABASE TestLoad_ED SET single_user WITH rollback immediate
+	
+	-- confirm the logical & physical filenames are still good, see step 5
+	--RESTORE FILELISTONLY FROM DISK= '\\sxasqlrep\ArchiveREP\REPO_ED\REPO_ED.bak'
+		
+	
+	-- change logical filenames if needed, change physical for current backup file
+	RESTORE DATABASE TestLoad_ED FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd_ED\SXAProd_ED.bak'
+	WITH MOVE 'SXAProd_ED_data' TO 'T:\MSSQL\Data\TestLoad_ED_data.MDF',
+	MOVE 'ED' TO 'T:\MSSQL\Data\TestLoad_EDED_data.NDF',
+	     MOVE 'SXAProd_ED_log' TO 'J:\MSSQL\Log\TestLoad_ED_log.LDF',
+			REPLACE,
+			RECOVERY
+		
+
+-- SET to single user, kicking everyone out, so we can restore the db
+ALTER DATABASE TestLoad_mnc SET single_user WITH rollback immediate
+
+-- confirm the logical & physical filenames are still good, see step 5
+--RESTORE FILELISTONLY FROM DISK= '\\sxasqlrep\ArchiveREP\REPO_MNC\REPO_MNC.bak'
+
+
+-- change logical filenames if needed, change physical for current backup file
+RESTORE DATABASE TestLoad_mnc FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd_MNC\SXAProd_MNC.bak'
+WITH MOVE 'SXAProd_MNC_dat' TO 'T:\MSSQL\Data\TestLoad_mnc.MDF',
+MOVE 'MNC' TO 'T:\MSSQL\Data\TestLoad_MNCMNC.NDF',
+     MOVE 'SXAProd_MNC_log' TO 'J:\MSSQL\Log\TestLoad_mnc_log.LDF',
+		REPLACE,
+		RECOVERY
+
+-- SET to single user, kicking everyone out, so we can restore the db
+ALTER DATABASE TestLoad_img SET single_user WITH rollback immediate
+
+-- confirm the logical & physical filenames are still good, see step 5
+--RESTORE FILELISTONLY FROM DISK= '\\sxasqlrep\ArchiveREP\REPO_IMG\REPO_IMG.bak'
+
+-- change logical filenames if needed, change physical for current backup file
+RESTORE DATABASE TestLoad_img FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd_IMG\SXAProd_IMG.bak'
+WITH MOVE 'SXAProd_IMG_dat' TO 'T:\MSSQL\Data\TestLoad_img.MDF',
+MOVE 'IMG' TO 'T:\MSSQL\Data\TestLoad_imgIMG.MDF',
+     MOVE 'SXAProd_IMG_log' TO 'J:\MSSQL\Log\TestLoad_img.LDF',
+		REPLACE,
+		RECOVERY
+		
+-- SET to single user, kicking everyone out, so we can restore the db
+ALTER DATABASE TestLoad_vm SET single_user WITH rollback immediate
+		
+-- confirm the logical & physical filenames are still good, see step 5
+--RESTORE FILELISTONLY FROM DISK= '\\sxasqlrep\ArchiveREP\REPO_VM\REPO_VM.bak'
+	
+
+-- change logical filenames if needed, change physical for current backup file
+RESTORE DATABASE TestLoad_vm FROM DISK ='\\sxasqlmap\ArchiveMA\SXAProd_VM\SXAProd_VM.bak'
+WITH MOVE 'SXAProd_VM_dat' TO 'T:\MSSQL\Data\TestLoad_vm_data.MDF',
+MOVE 'VM' TO'T:\MSSQL\Data\TestLoad_vmVM_data.MDF',
+     MOVE 'SXAProd_VM_log' TO 'J:\MSSQL\Log\TestLoad_vm_log.LDF',
+		REPLACE,
+		RECOVERY
+
+
+--SELECT * FROM TestLoad_ED.dbo.SXADBComponentInstall
+UPDATE TestLoad_ED.dbo.SXADBComponentInstall
+SET MasterSQLServerName = 'SXASQLMAT',
+MasterDBName = 'TestLoad'
+
+--SELECT * FROM TestLoad_ED.dbo.SXADBComponentLinkedServer
+UPDATE TestLoad_ED.dbo.SXADBComponentLinkedServer
+SET LinkedServer = 'SXASQLMAT'
+
+--SELECT * FROM TestLoad_img.dbo.SXADBComponentInstall
+UPDATE TestLoad_img.dbo.SXADBComponentInstall
+SET MasterSQLServerName = 'SXASQLMAT',
+MasterDBName = 'TestLoad'
+
+--SELECT * FROM TestLoad_img.dbo.SXADBComponentLinkedServer
+UPDATE TestLoad_img.dbo.SXADBComponentLinkedServer
+SET [LinkedServer] = 'SXASQLMAT'
+	
+		
+--SELECT * FROM TestLoad_vm.dbo.SXADBComponentInstall
+UPDATE TestLoad_vm.dbo.SXADBComponentInstall
+SET MasterSQLServerName = 'SXASQLMAT',
+MasterDBName = 'TestLoad'
+
+--SELECT * FROM TestLoad_vm.dbo.SXADBComponentLinkedServer
+UPDATE TestLoad_vm.dbo.SXADBComponentLinkedServer
+SET [LinkedServer] = 'SXASQLMAT'
+
+   
+--SELECT * FROM TestLoad_mnc.dbo.SXADBComponentInstall
+UPDATE TestLoad_mnc.dbo.SXADBComponentInstall
+SET MasterSQLServerName = 'SXASQLMAT',
+MasterDBName = 'TestLoad'
+
+--SELECT * FROM TestLoad_mnc.dbo.SXADBComponentLinkedServer
+UPDATE TestLoad_mnc.dbo.SXADBComponentLinkedServer
+SET [LinkedServer] = 'SXASQLMAT'
+
+
+
+
+-- SELECT * FROM TestLoad.dbo.HVCSite
+UPDATE TestLoad.dbo.HVCSite
+SET SQLServerName = 'SXASQLMAT',
+DBName ='TestLoad'
+WHERE Description = 'Master Active'
+
+-- UPDATE HVCSite
+UPDATE TestLoad.dbo.HVCSite
+SET [LinkedServer] = 'SXASQLMAT',
+SQLServerName = 'SXASQLMAT',
+DBName ='TestLoad_vm'
+WHERE Description = 'Vocabulary Manager'
+
+-- UPDATE HVCSite
+UPDATE TestLoad.dbo.HVCSite
+SET [LinkedServer] = 'SXASQLMAT',
+SQLServerName = 'SXASQLMAT',
+DBName ='TestLoad_img'
+WHERE Description = 'Imaging'
+
+-- UPDATE HVCSite
+UPDATE TestLoad.dbo.HVCSite
+SET [LinkedServer] = 'SXASQLMAT',
+SQLServerName = 'SXASQLMAT',
+DBName ='TestLoad_mnc'
+WHERE Description = 'Medical Necessity Checking'
+
+-- UPDATE HVCSite
+UPDATE TestLoad.dbo.HVCSite
+SET [LinkedServer] = 'SXASQLMAT',
+SQLServerName = 'SXASQLMAT',
+DBName ='TestLoad_ED'
+WHERE Description = 'Emergency Department'
+
+	
+--drop/add special logins TestLoad
+exec TestLoad.dbo.sp_dropuser Reportuser
+	
+exec TestLoad.dbo.sp_dropuser appanalyst
+		
+exec TestLoad.dbo.sp_adduser Reportuser
+
+exec TestLoad.dbo.sp_adduser appanalyst
+		
+		
+exec TestLoad.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec TestLoad.dbo.sp_addrolemember HVCUser, Reportuser
+		
+exec TestLoad.dbo.sp_addrolemember db_datareader, appanalyst
+		
+
+
+
+--drop/add special logins TestLoad_VM
+exec TestLoad_vm.dbo.sp_dropuser Reportuser
+		
+exec TestLoad_vm.dbo.sp_dropuser appanalyst
+		
+exec TestLoad_vm.dbo.sp_adduser Reportuser
+		
+exec TestLoad_vm.dbo.sp_adduser appanalyst
+
+exec TestLoad_vm.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec TestLoad_vm.dbo.sp_addrolemember HVCUser, Reportuser
+		
+exec TestLoad_vm.dbo.sp_addrolemember db_datareader, appanalyst
+
+		
+		
+--drop/add special logins TestLoad_MNC
+exec TestLoad_mnc.dbo.sp_dropuser Reportuser
+		
+exec TestLoad_mnc.dbo.sp_dropuser appanalyst
+		
+exec TestLoad_mnc.dbo.sp_adduser Reportuser
+		
+exec TestLoad_mnc.dbo.sp_adduser appanalyst
+
+				
+exec TestLoad_mnc.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec TestLoad_mnc.dbo.sp_addrolemember HVCUser, Reportuser
+		
+exec TestLoad_mnc.dbo.sp_addrolemember db_datareader, appanalyst
+
+--drop/add special logins TestLoad_IMG
+exec TestLoad_img.dbo.sp_dropuser Reportuser
+		
+exec TestLoad_img.dbo.sp_dropuser appanalyst
+
+exec TestLoad_img.dbo.sp_adduser Reportuser
+		
+exec TestLoad_img.dbo.sp_adduser appanalyst
+
+		
+exec TestLoad_img.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec TestLoad_img.dbo.sp_addrolemember HVCUser, Reportuser
+	
+exec TestLoad_img.dbo.sp_addrolemember db_datareader, appanalyst
+
+
+--drop/add special logins TestLoad_ED
+exec TestLoad_ED.dbo.sp_dropuser Reportuser
+		
+exec TestLoad_ED.dbo.sp_dropuser appanalyst
+
+exec TestLoad_ED.dbo.sp_adduser Reportuser
+		
+exec TestLoad_ED.dbo.sp_adduser appanalyst
+
+		
+exec TestLoad_ED.dbo.sp_addrolemember db_datareader, Reportuser
+		
+exec TestLoad_ED.dbo.sp_addrolemember HVCUser, Reportuser
+		
+exec TestLoad_ED.dbo.sp_addrolemember db_datareader, appanalyst
+		
+
+-- SELECT replace(ScriptsDirectory, '\\CHSXACON_P', '\\CHSXACON_T'), * FROM TestLoad.dbo.SCMInstallDetail
+UPDATE TestLoad.dbo.SCMInstallDetail  --  ******************************************
+SET dataserver = 'SXASQLMAT',
+masterdataserver = 'SXASQLMAT',
+ScriptsDirectory = (SELECT replace(ScriptsDirectory, '\\CHSXACON_P', '\\CHSXACON_T')),
+dbname ='TestLoad'
+ 
+--SELECT * FROM TestLoad.dbo.sxaeisdataserver
+UPDATE TestLoad.dbo.sxaeisdataserver
+SET ServerName = 'SXASQLMAT'
+
+
+	
+-- SELECT * FROM TestLoad.dbo.CV3CommunicationProcess
+UPDATE TestLoad.dbo.CV3CommunicationProcess
+SET DoorbellName = 'RPTSCH_PRE_RPTSCH',
+MessageServerCode ='PRE_RPTMS',
+communicationtype = 'Other'
+WHERE Code = 'Report SCHEDULER'
+
+-- UPDATE CV3CommunicationProcess
+UPDATE TestLoad.dbo.CV3CommunicationProcess
+SET DoorbellName = 'ORDGENSCH_PRE_OGSCH',
+MessageServerCode ='PRE_OGMS',
+communicationtype = 'Other'
+WHERE Code = 'ORDER GENERATION SCHEDULER'
+
+-- to prevent orders REQ's from printing
+UPDATE TestLoad.dbo.CV3CommunicationProcess
+SET communicationtype = 'Other'
+WHERE communicationtype = 'Report'
+
+
+-- SELECT * FROM TestLoad.dbo.SXADBVersionHistory   ***********************************
+UPDATE TestLoad.dbo.SXADBVersionHistory
+SET SQLInstance = 'SXASQLMAT',
+ScriptsDirectory =  (SELECT replace(ScriptsDirectory, '\\CHSXACON_P', '\\CHSXACON_T')),
+DBName ='TestLoad'
+
+--reSET the logical printer paths to the new Report server
+--select * from TestLoad.dbo.HVCLogicalPrintLocation
+UPDATE TestLoad.dbo.HVCLogicalPrintLocation
+SET printeraddress =  '\\chsxarptt\HISG16687pr'
+FROM TestLoad.dbo.hvclogicalprintlocation
+WHERE printeraddress LIKE '%chsxarpt%'
+
+UPDATE TestLoad.dbo.hvcReportdefinition
+SET printeraddress =  '\\chsxarptt\HISG16687pr'
+FROM TestLoad.dbo.hvcReportdefinition
+WHERE printeraddress LIKE '%chsxarpt%'
+
+UPDATE TestLoad.dbo.hvcReportdistribution
+SET printeraddress =  '\\chsxarptt\HISG16687pr'
+FROM TestLoad.dbo.hvcReportdistribution
+WHERE printeraddress like '%chsxarpt%'
+
+--SELECT * FROM TestLoad.dbo.SXADBJobStepConfig       
+UPDATE TestLoad.dbo.SXADBJobStepConfig
+SET Command = (SELECT replace(command, 'SXASQLMAP', 'SXASQLMAT'))
+FROM TestLoad.dbo.SXADBJobStepConfig
+WHERE Command like '%SXASQLMAP%'
+
+UPDATE TestLoad.dbo.SXADBJobStepConfig
+SET Command = (SELECT replace(command, 'SXAProd', 'TestLoad'))
+FROM TestLoad.dbo.SXADBJobStepConfig
+WHERE SXADBJobID = '18'
+
+
+UPDATE TestLoad.dbo.SXADBJobStepConfig
+SET Command = (SELECT replace(command, 'SXAPROD_ED', 'TestLoad_ED'))
+FROM TestLoad.dbo.SXADBJobStepConfig
+WHERE SXADBJobID = '13'	
+
+UPDATE testload.dbo.cv3user
+SET idcode = ('xxzz22' + idcode)
+WHERE idcode in (
+SELECT DISTINCT idcode 
+FROM dbo.cv3user u
+INNER JOIN dbo.cv3organizationalunit ou
+ON ou.guid = u.orgunitguid
+WHERE --ou.name NOT in ('Clinical Informatics', 'it - sxa') 
+--AND 
+u.active = 1)
+
+
+--cleanup unnecessary data 
+-- keep this in case we restore from repo.bak when history was left in
+	
+TRUNCATE TABLE TestLoad.dbo.cv3auditlog
+TRUNCATE TABLE TestLoad.dbo.cv3ordergenerationqueue
+TRUNCATE TABLE TestLoad.dbo.CV3WorklistClientVisit
+TRUNCATE TABLE TestLoad.dbo.CV3WorkUserItemAccess
+TRUNCATE TABLE TestLoad.dbo.HVCSubmittedReport
+TRUNCATE TABLE TestLoad.dbo.HVCRequestedReport
+TRUNCATE TABLE TestLoad.dbo.HVCReportHistory
+
+
+
+DBCC CHECKDB ('Testload')
+DBCC CHECKDB ('Testload_IMG')
+DBCC CHECKDB ('Testload_MNC')
+DBCC CHECKDB ('Testload_VM')
+DBCC CHECKDB ('Testload_ED')
+
+   
+   
+/*****************************************************************************
+Name:	CRussell
+Date:	6/24/05
+Desc:	To copy the Prod database, to TestLoad on SXASQLMAT
+*****************************************************************************/

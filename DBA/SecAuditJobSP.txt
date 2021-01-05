@@ -1,0 +1,27 @@
+select identity(int,1,1) as traceid, a.name as [Database],
+	ltrim(rtrim(convert(varchar,b.spid))) as spid,
+ltrim(rtrim(b.loginame)) as loginame,ltrim(rtrim(b.program_name)) 
+	as program_name,ltrim(rtrim(b.hostname)) 
+as hostname into #audittrace from master.dbo.sysprocesses b (nolock) , 
+	master.dbo.sysdatabases A where 
+a.dbid = b.dbid and ltrim(rtrim(loginame)) not in 
+('DBA1','domain\systemaccount','DBA2','domain\administrator') and 
+ltrim(rtrim(left(program_name,8))) in ('MS SQLEM','SQL Quer')
+
+--drop table #audittrace
+select * from #audittrace
+
+declare @count int
+declare @message varchar(1000)
+set @count = (select count(*) from #audittrace)
+
+While @count >=1 
+begin
+set @message = (select 'SQL Security Enhanced Auditing: SPID =' + spid +'     , 
+	Database: ' + [Database] + 
+'    ,Loginame: ' + loginame + '    ,hostname: '+ hostname +'    , Program Name: ' + 
+program_name from #audittrace where traceid = @count)
+set @count  = @count-1
+RAISERROR (@message, 16, 1) with log
+end
+drop table #audittrace

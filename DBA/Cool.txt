@@ -1,0 +1,59 @@
+SELECT distinct co.objectname
+FROM CHOMP_ShowContigOutput co
+INNER JOIN sysobjects so
+ON so.id=co.Objectid
+WHERE OBJECTPROPERTY(CO.OBJECTID, 'IsUserTable') =1
+AND co.pages >800000    
+
+SELECT distinct co.objectname
+FROM CHOMP_ShowContigOutput co
+INNER JOIN sysobjects so
+ON so.id=co.Objectid
+WHERE OBJECTPROPERTY(CO.OBJECTID, 'IsUserTable') =1
+AND co.pages >700000    
+AND co.pages <800000
+AND objectname NOT IN (select distinct objectname from CHOMP_ShowContigOutput where pages >800000)
+
+SELECT distinct co.objectname
+FROM CHOMP_ShowContigOutput co
+INNER JOIN sysobjects so
+ON so.id=co.Objectid
+WHERE OBJECTPROPERTY(CO.OBJECTID, 'IsUserTable') =1
+AND co.pages >270000
+AND co.pages <700000    
+AND objectname NOT IN (select distinct objectname from CHOMP_ShowContigOutput where pages >700000)
+
+SELECT distinct co.objectname
+FROM CHOMP_ShowContigOutput co
+INNER JOIN sysobjects so
+ON so.id=co.Objectid
+WHERE OBJECTPROPERTY(CO.OBJECTID, 'IsUserTable') =1
+AND co.pages >100000
+AND co.pages <270000
+AND objectname NOT IN (select distinct objectname from CHOMP_ShowContigOutput where pages >270000)
+
+SELECT distinct co.objectname
+FROM CHOMP_ShowContigOutput co
+INNER JOIN sysobjects so
+ON so.id=co.Objectid
+WHERE OBJECTPROPERTY(CO.OBJECTID, 'IsUserTable') =1
+AND co.pages >1500
+AND co.pages <100000
+AND objectname NOT IN (select distinct objectname from CHOMP_ShowContigOutput where pages >10000)
+
+SELECT distinct co.objectname
+FROM CHOMP_ShowContigOutput co
+INNER JOIN sysobjects so
+ON so.id=co.Objectid
+WHERE OBJECTPROPERTY(CO.OBJECTID, 'IsUserTable') =1
+AND co.pages >100
+AND co.pages <15000
+AND objectname NOT IN (select distinct objectname from CHOMP_ShowContigOutput where pages >15000)
+
+SELECT distinct co.objectname
+FROM CHOMP_ShowContigOutput co
+INNER JOIN sysobjects so
+ON so.id=co.Objectid
+WHERE OBJECTPROPERTY(CO.OBJECTID, 'IsUserTable') =1
+AND objectname NOT IN ('cv3auditlog','cv3ordergenerationqueue','cv3sendadtqueue','cv3senddocsqueue','cv3sendorderqueue','CV3WorklistClientVisit','CV3WorkUserItemAccess')
+AND co.pages <100

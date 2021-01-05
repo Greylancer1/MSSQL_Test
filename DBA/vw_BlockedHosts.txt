@@ -1,0 +1,29 @@
+--List all hosts that are involved in a block
+--Either blocking, or being blocked
+CREATE VIEW BlockedHosts
+AS
+SELECT
+	s.SPID,
+	Hostname = RTrim(Convert(varchar(256), Hostname)),
+	Blocking = IsNull(b.spid, 0),
+	[Blocked By] = s.blocked,
+	WaitTime,
+	Program = program_name,
+	nt_username,
+	loginame
+FROM
+	master.dbo.sysprocesses s
+	LEFT JOIN (
+		SELECT DISTINCT blocked, spid
+		FROM master.dbo.sysprocesses
+		WHERE
+			blocked > 0
+			AND waittime >= 1000 -- time in ms
+	) b ON b.blocked = s.spid
+WHERE
+	b.blocked > 0
+	OR (
+		s.blocked > 0
+		AND s.waittime >= 1000
+	)
+

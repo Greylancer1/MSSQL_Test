@@ -1,0 +1,75 @@
+tail -fn0 logfile | \
+while read line ; do
+        echo "$line" | grep "pattern"
+        if [ $? = 0 ]
+        then
+                ... do something ...
+        fi
+done
+
+OR
+
+tail -fn0 logfile | awk '/pattern/ { print | "command" }'
+
+OR
+
+tail -f log.txt | egrep -m 1 "error"
+echo "Found error, do sth."
+
+OR
+
+( tail -f -n0 logfile.log & ) | grep -q "Server Started"
+
+OR
+
+ tail -1 /path/to/file.log > /some/dir/after
+ if cmp -s /some/dir/after /some/dire/before
+ then
+     cat /some/dir/after | mail -s "restart" admin@exemple.com
+     cp /some/dir/after /some/dir/before
+ fi
+
+OR
+
+#!/bin/bash
+
+service=$(tail -1 /path/to/logfile | awk '{print $4}')
+logdate=$(tail -1 /path/to/logfile | awk '{print $1,$2,$3}')
+
+if  test 'find "/path/to/logfile" -mmin -5'
+then
+    echo "$service was restarted on $logdate" | mail -s "Restart notification" mail@domain.com
+fi
+
+OR
+
+#!/bin/bash
+
+string=fail
+
+tail -n0 -F /pat/to/file | \
+while read LINE
+do
+  if echo "$LINE" | grep "$string" 1>/dev/null 2>&1
+  then
+    echo "String found on $HOSTNAME" | mail -s "Subject" dummy@iam.com
+  fi
+done
+
+OR
+
+#!/bin/bash
+
+string="fail"
+
+tail -n 0 -F /path/to/file | \
+while read LINE
+do
+echo "$LINE" | grep -q $string
+if [ $? = 0 ]
+then
+echo -e "$string found on $HOSTNAME" | mail -s "Something's wrong on $(hostname)" whomever@wherever.com
+fi
+done
+
+nohup ./script.name.sh 0<&- &>/dev/null &

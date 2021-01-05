@@ -1,0 +1,60 @@
+SCM big tables in need of offline reindexing:
+CV3OrderStatusHistory; OrderStatusHistClustIdx
+
+ALTER INDEX OrderStatusHistClustIdx ON CV3OrderStatusHistory REBUILD WITH (SORT_IN_TEMPDB = ON, ONLINE = OFF) 
+
+CV3WorkUserItemAccess; CV3WorkUserItemAccessAI03
+
+ALTER INDEX CV3WorkUserItemAccessAI03 ON CV3WorkUserItemAccess REBUILD WITH (SORT_IN_TEMPDB = ON, ONLINE = OFF) 
+
+CV3ObsFSListValues; SCMObsFSListValuesAI03
+
+ALTER INDEX SCMObsFSListValuesAI03 ON SCMObsFSListValues REBUILD WITH (SORT_IN_TEMPDB = ON, ONLINE = OFF) 
+
+CV3OrderTaskOccurrence; CV3OrderTaskOccurrenceAI01
+
+ALTER INDEX CV3OrderTaskOccurrenceAI01 ON CV3OrderTaskOccurrence REBUILD WITH (SORT_IN_TEMPDB = ON, ONLINE = OFF) 
+
+CV3OrderStatusHistory; CV3OrderStatusHistoryPK
+
+ALTER INDEX CV3OrderStatusHistoryPK ON CV3OrderStatusHistory REBUILD WITH (SORT_IN_TEMPDB = ON, ONLINE = OFF) 
+
+CV3OrderTaskOccurrence; OrderTaskOccurClustIdx
+
+ALTER INDEX OrderTaskOccurClustIdx ON CV3OrderTaskOccurrence REBUILD WITH (SORT_IN_TEMPDB = ON, ONLINE = OFF) 
+
+CV3ObsFSListValues; SCMObsFSListValuesCI
+
+ALTER INDEX SCMObsFSListValuesCI ON SCMObsFSListValues REBUILD WITH (SORT_IN_TEMPDB = ON, ONLINE = OFF) 
+
+
+
+--Reorgs?
+CV3TaskStatusHistory; CV3TaskStatusHistoryAI01
+
+ALTER INDEX CV3TaskStatusHistoryAI01 ON CV3TaskStatusHistory REORGANIZE 
+
+CV3TaskStatusHistory; CV3TaskStatusHistoryClustIdx
+
+ALTER INDEX CV3TaskStatusHistoryClustIdx ON CV3TaskStatusHistory REORGANIZE 
+
+CV3OrderTaskOccurrence; CV3OrderTaskOccurrencePK
+
+ALTER INDEX CV3OrderTaskOccurrencePK ON CV3OrderTaskOccurrence REORGANIZE  
+
+CV3TaskStatusHistory; CV3TaskStatusHistoryPK
+
+ALTER INDEX CV3TaskStatusHistoryPK ON CV3TaskStatusHistory REORGANIZE WITH 
+
+CV3WorkUserItemAccess; CV3WorkUserItemAccessPK
+
+ALTER INDEX CV3WorkUserItemAccessPK ON CV3WorkUserItemAccess REORGANIZE WITH 
+
+CV3BasicObservation; BasicObservationClustIdx
+CV3ObservationDocumentCUR; CV3ObservationDocumentCURCI
+CV3BasicObservation; CV3BasicObservationPK
+CV3OrderStatusHistory; CV3OrderStatusHistoryAI01
+CV3DiagnosticExtension; CV3DiagnosticExtensionPK
+CV3ClientUserData; ClientUserDataClustIdx
+CV3CareProviderVisitRole; CV3CareProviderVisitRoleCI
+

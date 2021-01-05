@@ -1,0 +1,2 @@
+exec sp_dboption 'TEST55', 'published'
+EXEC sp_removedbreplication

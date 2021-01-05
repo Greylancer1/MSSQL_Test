@@ -1,0 +1,2 @@
+Mongo Ops Manager requires a user with root access.
+Manually installing monitoring agents seems to work the best.

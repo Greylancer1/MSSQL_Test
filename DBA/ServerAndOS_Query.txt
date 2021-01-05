@@ -1,0 +1,5 @@
+SELECT     TOP 100 PERCENT dbo.OCMLkpHost.HostName, dbo.OCMLkpHost.SerialNum, dbo.OCMLkpOS.OS, dbo.OCMLkpHost.CarePaq
+FROM         dbo.OCMLkpHost INNER JOIN
+                      dbo.OCMLkpOS ON dbo.OCMLkpHost.OSID = dbo.OCMLkpOS.OS_ID
+WHERE     (dbo.OCMLkpHost.Active = 'Y') AND (dbo.OCMLkpOS.OS LIKE 'W%')
+ORDER BY dbo.OCMLkpOS.OS

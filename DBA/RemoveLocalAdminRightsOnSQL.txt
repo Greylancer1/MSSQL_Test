@@ -1,0 +1,12 @@
+If your aim is to use Local System Account on SQL Services and to remove
+Local Administrators group from SQL Logins then try:
+
+EXEC sp_grantlogin [NT AUTHORITY\System]
+
+EXEC sp_addsrvrolemember @loginame = [NT AUTHORITY\System] , @rolename =
+'sysadmin'
+
+EXEC sp_revokelogin [BUILTIN\Administrators]
+
+
+This works for me.. Try first on test server.

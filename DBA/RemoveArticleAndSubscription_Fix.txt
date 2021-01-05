@@ -1,0 +1,2 @@
+DECLARE @Pub sysname = 'ECLP_Reporting_'+ DB_Name() EXEC sp_dropsubscription @Publication=@Pub , @Article='TranslatorConfig', @Subscriber='all'
+EXEC sp_droparticle @publication=@Pub, @article='TranslatorConfig', @force_invalidate_snapshot=0

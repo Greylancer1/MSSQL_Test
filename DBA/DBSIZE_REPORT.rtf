@@ -1,0 +1,42 @@
+REM ------------------------------------------------------------------------------
+REM Filename:   DBSIZE_REPORT.SQL
+REM Purpose:    Shows current size, used & freespace within the datafiles.
+REM Author:     ANIRBAN DEY
+REM ------------------------------------------------------------------------------
+
+
+
+COLUMN free_space_mb format 999999.90
+COLUMN allocated_mb format 999999.90
+COLUMN used_mb format 999999.90
+set head off
+set echo off
+set verify off
+CLEAR SCREEN
+
+
+SELECT ''                       
+REPORT ON DATABASE SIZE
+----------------------- '' FROM DUAL;
+SELECT ''
+INSTANCE NAME:''||NAME FROM V$DATABASE;
+select ''
+VERSION:'' from dual;
+SELECT * FROM V$VERSION;
+SELECT ''
+WAIT..''FROM DUAL;
+SELECT ''TOTAL  :''||SUM(ALLOCATED_MB),
+       ''USED   :''||SUM(USED_MB) USED,
+       ''FREE   :''||SUM(FREE_SPACE_MB) 
+  FROM (SELECT SUBSTR (df.NAME, 1, 40) file_name, df.bytes / 1024 / 1024 allocated_mb,
+               ((df.bytes / 1024 / 1024) - NVL (SUM (dfs.bytes) / 1024 / 1024, 0)) used_mb,
+               NVL (SUM (dfs.bytes) / 1024 / 1024, 0) free_space_mb
+          FROM v$datafile df, dba_free_space dfs
+         WHERE df.file# = dfs.file_id(+)
+      GROUP BY dfs.file_id, df.NAME, df.file#, df.bytes
+      ORDER BY file_name);
+SELECT ''TEMPSIZE:''||USER_BYTES/1024/1024  FROM DBA_TEMP_FILES;
+SELECT ''
+--------------------------
+ALL SIZES ARE IN MEGABYTES
+'' FROM DUAL; 

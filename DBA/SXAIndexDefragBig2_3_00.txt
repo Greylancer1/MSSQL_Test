@@ -1,0 +1,60 @@
+CREATE   PROC CHOMP_DBCC_INDEXDEFRAG_BIG2
+(@dbName SYSNAME)
+AS
+SET NOCOUNT ON
+
+DECLARE @objName SYSNAME
+DECLARE @idxName SYSNAME
+DECLARE @SQL NVARCHAR(4000)
+DECLARE @ID INT
+DECLARE @RowCnt INT
+
+CREATE TABLE ##Indexes
+(
+ Indexes_ID INT IDENTITY(1, 1) NOT NULL,
+ IndexName SYSNAME NOT NULL,
+ ObjectName SYSNAME NOT NULL
+)
+
+SET @SQL = ''
+SET @SQL = @SQL + 'INSERT INTO ##Indexes (IndexName, ObjectName) '
+SET @SQL = @SQL + 'SELECT i.name, o.name '
+SET @SQL = @SQL + 'FROM ' + @dbName + '.dbo.sysindexes i '
+SET @SQL = @SQL + 'INNER JOIN ' + @dbName + '.dbo.sysobjects o '
+SET @SQL = @SQL + 'ON i.id = o.id '
+SET @SQL = @SQL + 'WHERE indid > 0 AND indid < 255 AND '
+SET @SQL = @SQL + 'o.type = ''U'' AND '
+SET @SQL = @SQL + '(i.status & (64 | 8388608)) <= 0 AND '
+SET @SQL = @SQL + 'o.name IN (''SCMObsFSListValues'', ''CV3Order'')'
+
+EXEC sp_executesql @statement = @SQL
+
+SELECT TOP 1 @ID = Indexes_ID, @idxName = IndexName, @objName = ObjectName
+FROM ##Indexes
+ORDER BY Indexes_ID
+
+ 
+
+SET @RowCnt = @@ROWCOUNT
+
+WHILE @RowCnt <> 0
+BEGIN
+
+ SET @SQL = 'DBCC INDEXDEFRAG(' + @dbname + ',' + @objName + ', ' + @idxName + ') WITH NO_INFOMSGS'
+
+ EXEC sp_executesql @statement = @SQL
+
+ SELECT TOP 1 @ID = Indexes_ID, @idxName = IndexName, @objName = ObjectName
+ FROM ##Indexes
+ WHERE Indexes_ID > @ID
+ ORDER BY Indexes_ID
+ 
+ SET @RowCnt = @@ROWCOUNT
+
+END
+
+DROP TABLE ##Indexes
+
+RETURN 0
+
+EXEC CHOMP_DBCC_INDEXDEFRAG_BIG2 [REPOT]

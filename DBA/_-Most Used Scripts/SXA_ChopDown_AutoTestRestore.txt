@@ -1,0 +1,63 @@
+Update SXADBApplicationInformation with the correct server and root master active database name.
+
+SXADBDropPatientDataWrapperPr
+
+Run that stored proc to get the code
+Then run it again with the code to chop down the data
+
+Automatic Test refresh steps:
+1.  TestLoad Chop Down
+	A.  Make sure its set to 'Use TestLoad'
+	B.  Generate security key for patient data wipe
+	C.  Run patient data wipe SP
+2.  Shrink TestLoad data and log files
+3.  Backup TestLoad db's
+4.  Restore TestLoad DB's to Test
+5.  Delete old Test Logins ie. '_CC, _ED, _IMG, etc...'
+6.  Have Wendy rebuild Test environment
+7.  Add CHOMP_Tables security rights to new _CC user
+
+
+Remove database replication
+
+Detach DEV Databases; reattach as DEV_OLD Create new empty DEV databases
+Backup SXA Test databases
+Copy SXA Test backups to SXASQLMD
+Restore SXA Test to DEV
+Update database from Test to DEV
+Delete old _CC and other SXA Logins
+Configure data files to auto-grow
+Keith sets new ID for Objects plus tabs 
+
+Reconfigure replication
+Configure new _CC user with ObjectsPlus role for CHOMP_Tables
+Create new _CC user over on SXAREPL55D with db rights to DEV55 db's 
+
+Backup SXA production databases
+Copy SXA Production backups to SXASQLMT 
+Restore SXA production to TESTLOAD
+Update database from Production to TESTLOAD
+Delete old _CC and other SXA Logins
+Purge patient data from TESTLOAD
+Shrink TESTLOAD data and T-Log files
+Backup TESTLOAD databases
+Copy TESTLOAD backup files to SXAMATRN
+Restore TESTLOAD to TRN_MSTR
+Update database from TESTLOAD to TRN_MSTR
+Configure data files to auto-grow
+Keith sets new ID for Objects plus tabs 
+Backup TRN_MSTR
+Create new environment and configures the services
+Configure new _CC user with ObjectsPlus role for CHOMP_Tables
+Create new _CC user over on SXAREPL55D with db rights to DEV55 db's 
+Update too new environment ID for interface ports in TRNES
+Backup TRN_MSTR
+Backup TRNES
+
+Backup TRN_MSTR
+Refresh TRAIN 1-5
+Wendy creates new environments and configures the services
+Backup TRAIN 1-5
+Configure new _CC users with ObjectsPlus role for CHOMP_Tables
+
+

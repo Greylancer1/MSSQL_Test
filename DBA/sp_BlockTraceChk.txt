@@ -1,0 +1,168 @@
+--Start a trace for a definite time period of hosts that are involved in a block
+CREATE PROCEDURE [dbo].[BlockedTraceStart]
+	@FileName nvarchar(256) = NULL,
+	@StopTime datetime = NULL,
+	@MaxFileSize bigint = 5 -- in Mb
+AS
+
+SET NOCOUNT ON
+
+DECLARE
+	@Result int,
+	@TraceID int,
+	@TraceTime datetime
+
+SET @TraceTime = GetDate()
+PRINT 'Trace Time: ' + Convert(varchar(23), @TraceTime)
+
+IF NOT EXISTS (SELECT * FROM BlockedHosts()) BEGIN
+	PRINT 'No hosts are blocking on server ' + convert(varchar(256), SERVERPROPERTY('ServerName')) + ', database ' + db_name() 
+	RETURN 0
+END
+
+IF @FileName IS NULL
+	SET @FileName = 'C:\BlockedTrace ' + convert(varchar(256), SERVERPROPERTY('ServerName')) + '-' + db_name() + ' ' + Replace(Replace(Convert(varchar(23), @TraceTime, 121), ':', ''), ' ', '-')
+
+IF @StopTime IS NULL SET @StopTime = GetDate() + '00:05' -- Run for five minutes
+
+-- Capture the currently blocked hosts in a log
+INSERT BlockingLog
+SELECT GetDate(), * FROM BlockedHosts()
+
+-- Create the trace (in stopped mode)
+EXEC @Result = sp_trace_create @TraceID OUTPUT, 0, @FileName, @MaxFileSize, @StopTime
+IF @Result <> 0 BEGIN
+	PRINT
+		CASE @Result
+			WHEN 1 THEN 'sp_trace_create Error 1 - Unknown error.'
+			WHEN 10 THEN 'sp_trace_create Error 10 - Invalid options. Options specified are incompatible.'
+			WHEN 12 THEN 'sp_trace_create Error 12 - File not created.'
+			WHEN 13 THEN 'sp_trace_create Error 13 - Out of memory. There is not enough memory to perform the specified action.'
+			WHEN 14 THEN 'sp_trace_create Error 14 - Invalid stop time. Stop time specified is in the past.' 
+			WHEN 15 THEN 'sp_trace_create Error 15 - Invalid parameters. User supplied incompatible parameters.'
+			ELSE 'sp_trace_create Unlisted Error ' + Convert(varchar(11), @Result)
+		END
+	GOTO Error
+END
+
+PRINT 'Trace File: ' + @FileName
+PRINT 'TraceID: ' + convert(varchar(11), @TraceID)
+
+-- Set the events
+DECLARE @on bit
+SET @on = 1
+EXEC sp_trace_setevent @TraceID, 10, 1, @on
+EXEC sp_trace_setevent @TraceID, 10, 6, @on
+EXEC sp_trace_setevent @TraceID, 10, 8, @on
+EXEC sp_trace_setevent @TraceID, 10, 9, @on
+EXEC sp_trace_setevent @TraceID, 10, 10, @on
+EXEC sp_trace_setevent @TraceID, 10, 11, @on
+EXEC sp_trace_setevent @TraceID, 10, 12, @on
+EXEC sp_trace_setevent @TraceID, 10, 13, @on
+EXEC sp_trace_setevent @TraceID, 10, 14, @on
+EXEC sp_trace_setevent @TraceID, 10, 16, @on
+EXEC sp_trace_setevent @TraceID, 10, 17, @on
+EXEC sp_trace_setevent @TraceID, 10, 18, @on
+EXEC sp_trace_setevent @TraceID, 12, 1, @on
+EXEC sp_trace_setevent @TraceID, 12, 6, @on
+EXEC sp_trace_setevent @TraceID, 12, 8, @on
+EXEC sp_trace_setevent @TraceID, 12, 9, @on
+EXEC sp_trace_setevent @TraceID, 12, 10, @on
+EXEC sp_trace_setevent @TraceID, 12, 11, @on
+EXEC sp_trace_setevent @TraceID, 12, 12, @on
+EXEC sp_trace_setevent @TraceID, 12, 13, @on
+EXEC sp_trace_setevent @TraceID, 12, 14, @on
+EXEC sp_trace_setevent @TraceID, 12, 16, @on
+EXEC sp_trace_setevent @TraceID, 12, 17, @on
+EXEC sp_trace_setevent @TraceID, 12, 18, @on
+EXEC sp_trace_setevent @TraceID, 37, 1, @on
+EXEC sp_trace_setevent @TraceID, 37, 6, @on
+EXEC sp_trace_setevent @TraceID, 37, 8, @on
+EXEC sp_trace_setevent @TraceID, 37, 9, @on
+EXEC sp_trace_setevent @TraceID, 37, 10, @on
+EXEC sp_trace_setevent @TraceID, 37, 11, @on
+EXEC sp_trace_setevent @TraceID, 37, 12, @on
+EXEC sp_trace_setevent @TraceID, 37, 13, @on
+EXEC sp_trace_setevent @TraceID, 37, 14, @on
+EXEC sp_trace_setevent @TraceID, 37, 16, @on
+EXEC sp_trace_setevent @TraceID, 37, 17, @on
+EXEC sp_trace_setevent @TraceID, 37, 18, @on
+EXEC sp_trace_setevent @TraceID, 41, 1, @on
+EXEC sp_trace_setevent @TraceID, 41, 6, @on
+EXEC sp_trace_setevent @TraceID, 41, 8, @on
+EXEC sp_trace_setevent @TraceID, 41, 9, @on
+EXEC sp_trace_setevent @TraceID, 41, 10, @on
+EXEC sp_trace_setevent @TraceID, 41, 11, @on
+EXEC sp_trace_setevent @TraceID, 41, 12, @on
+EXEC sp_trace_setevent @TraceID, 41, 13, @on
+EXEC sp_trace_setevent @TraceID, 41, 14, @on
+EXEC sp_trace_setevent @TraceID, 41, 16, @on
+EXEC sp_trace_setevent @TraceID, 41, 17, @on
+EXEC sp_trace_setevent @TraceID, 41, 18, @on
+EXEC sp_trace_setevent @TraceID, 43, 1, @on
+EXEC sp_trace_setevent @TraceID, 43, 6, @on
+EXEC sp_trace_setevent @TraceID, 43, 8, @on
+EXEC sp_trace_setevent @TraceID, 43, 9, @on
+EXEC sp_trace_setevent @TraceID, 43, 10, @on
+EXEC sp_trace_setevent @TraceID, 43, 11, @on
+EXEC sp_trace_setevent @TraceID, 43, 12, @on
+EXEC sp_trace_setevent @TraceID, 43, 13, @on
+EXEC sp_trace_setevent @TraceID, 43, 14, @on
+EXEC sp_trace_setevent @TraceID, 43, 16, @on
+EXEC sp_trace_setevent @TraceID, 43, 17, @on
+EXEC sp_trace_setevent @TraceID, 43, 18, @on
+EXEC sp_trace_setevent @TraceID, 45, 1, @on
+EXEC sp_trace_setevent @TraceID, 45, 6, @on
+EXEC sp_trace_setevent @TraceID, 45, 8, @on
+EXEC sp_trace_setevent @TraceID, 45, 9, @on
+EXEC sp_trace_setevent @TraceID, 45, 10, @on
+EXEC sp_trace_setevent @TraceID, 45, 11, @on
+EXEC sp_trace_setevent @TraceID, 45, 12, @on
+EXEC sp_trace_setevent @TraceID, 45, 13, @on
+EXEC sp_trace_setevent @TraceID, 45, 14, @on
+EXEC sp_trace_setevent @TraceID, 45, 16, @on
+EXEC sp_trace_setevent @TraceID, 45, 17, @on
+EXEC sp_trace_setevent @TraceID, 45, 18, @on
+EXEC sp_trace_setevent @TraceID, 100, 1, @on
+EXEC sp_trace_setevent @TraceID, 100, 6, @on
+EXEC sp_trace_setevent @TraceID, 100, 8, @on
+EXEC sp_trace_setevent @TraceID, 100, 9, @on
+EXEC sp_trace_setevent @TraceID, 100, 10, @on
+EXEC sp_trace_setevent @TraceID, 100, 11, @on
+EXEC sp_trace_setevent @TraceID, 100, 12, @on
+EXEC sp_trace_setevent @TraceID, 100, 13, @on
+EXEC sp_trace_setevent @TraceID, 100, 14, @on
+EXEC sp_trace_setevent @TraceID, 100, 16, @on
+EXEC sp_trace_setevent @TraceID, 100, 17, @on
+EXEC sp_trace_setevent @TraceID, 100, 18, @on
+
+-- Set the filters:
+-- Trace only the hosts involved in blocking
+DECLARE
+	@HostName nvarchar(128),
+	@SPIDs varchar(8000)
+
+SET @HostName = ''
+PRINT 'Trace Hosts:'
+WHILE @HostName IS NOT NULL BEGIN
+	IF @HostName <> '' BEGIN
+		EXEC sp_trace_setfilter @TraceID, 8, 1, 6, @HostName
+		SET @SPIDs = NULL
+		SELECT @SPIDs = IsNull(@SPIDs + ', ', '') + Convert(varchar(11), SPID) FROM BlockedHosts() WHERE Hostname = @HostName
+		PRINT '   ' + @HostName + ', SPID' + CASE WHEN @SPIDs LIKE '%,%' THEN 's' ELSE '' END + ' ' + @SPIDs
+	END
+	SET @HostName = (SELECT TOP 1 Hostname FROM BlockedHosts() WHERE Hostname > @HostName ORDER BY Hostname)
+END
+
+EXEC sp_trace_setfilter @TraceID, 10, 0, 7, N'SQL Profiler'
+EXEC sp_trace_setfilter @TraceID, 10, 0, 7, N'SQLAgent%'
+
+-- Start the trace
+EXEC sp_trace_setstatus @TraceID, 1
+
+RETURN 1
+
+Error:
+RETURN 2
+
+GO

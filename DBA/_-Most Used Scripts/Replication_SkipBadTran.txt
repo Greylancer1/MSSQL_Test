@@ -1,0 +1,4 @@
+--Step1: Find which sqeno is erroring
+sp_helpsubscriptionerrors 'SXASQL55MP','SXA55P','ECLP_Reporting_SXA55P','SXAREPL55P','SXA55P'
+--Step2: Skip it!
+sp_setsubscriptionxactseqno 'SXASQL55MP','SXA55P','ECLP_Reporting_SXA55P',0x000186F20003CD1D000500000000

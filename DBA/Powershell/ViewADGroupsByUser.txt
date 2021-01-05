@@ -1,0 +1,9 @@
+$strName = "AD Name"
+$strFilter = "(&(objectCategory=User)(samAccountName=$strName))"
+
+$objSearcher = New-Object System.DirectoryServices.DirectorySearcher
+$objSearcher.Filter = $strFilter
+
+$objPath = $objSearcher.FindOne()
+$objUser = $objPath.GetDirectoryEntry()
+$objUser.memberOf

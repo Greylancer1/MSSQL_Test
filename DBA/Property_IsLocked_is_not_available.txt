@@ -1,0 +1,7 @@
+alter login sa
+
+with password = 'yourpwd' unlock,
+
+check_policy = off,
+
+check_expiration = off

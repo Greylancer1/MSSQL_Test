@@ -1,0 +1,16 @@
+EXEC sp_spaceused N'SCMObsFsListValues'
+
+EXEC sp_spaceused N'CV3Observation'
+EXEC sp_spaceused N'CV3Observationxinfo'
+EXEC sp_spaceused N'CV3ObservationDocument'
+EXEC sp_spaceused N'CV3ClientDocument'
+EXEC sp_spaceused N'CV3ClientDocDetail'
+EXEC sp_spaceused N'CV3ClientDocDetailHistXref'
+EXEC sp_spaceused N'CV3ClientDocHistory'
+EXEC sp_spaceused N'CV3ClientDocProviderXref'
+EXEC sp_spaceused N'SXACDClientDocDetailText'
+
+GO
+
+SELECT COUNT(*) FROM CV3ClientDocument
+WHERE CreatedWhen > '1/1/2010' 

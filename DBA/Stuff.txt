@@ -1,0 +1,18 @@
+APPSRV1\TTSQLT
+ELINKSQLT
+CVISCONT
+CVISSQLSRVT
+EASYID-TEST
+INFOGT
+MEDIASRV1
+NETMGMT3
+RADONCSERVERT
+RISSQLT
+SMS1
+ELINKSQLD
+EPIT
+
+SELECT     RecordID, EventTime, FieldName, FieldType, RecogType, RecogFeat, MSElapsed, Length, NeedRvw, FieldConf, LowConfCh, Chars, Chars_NR, 
+                      Chars_BI, Chars_INC, UniqueID
+FROM         tfrfstat
+WHERE     (EventTime BETWEEN DATEDIFF(SECOND, 'Jan 1 1970', 'Apr 7 2008') AND DATEDIFF(SECOND, 'Jan 1 1970', 'Apr 14 2008') - 1)

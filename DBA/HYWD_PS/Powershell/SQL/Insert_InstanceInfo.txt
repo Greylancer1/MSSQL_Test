@@ -1,0 +1,5 @@
+INSERT INTO InstanceInfoMon SELECT CONVERT(nvarchar(50),SERVERPROPERTY('ServerName')) AS ServerName
+, CONVERT(nvarchar(50),SERVERPROPERTY('ProductVersion')) AS ProductVersion
+, CONVERT(nvarchar(50),SERVERPROPERTY('ProductLevel')) AS ProductLevel
+, CONVERT(nvarchar(50),SERVERPROPERTY('Edition')) AS Edition
+, CONVERT(nvarchar(50),SERVERPROPERTY('EngineEdition')) AS EngineEdition
