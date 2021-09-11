@@ -1,3 +1,0 @@
-sp_who "SPID"
-DBCC INPUTBUFFER "(SPID)"
-Gives you what the SQL spid is running 

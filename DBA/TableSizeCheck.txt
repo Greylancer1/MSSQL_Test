@@ -1,3 +1,0 @@
---Show table sizes for a database
-
-sp_MSforeachtable @command1='EXEC sp_spaceused ''?''',@whereand='or OBJECTPROPERTY(o.id, N''IsUserTable'') = 1'

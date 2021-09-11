@@ -1,1 +1,0 @@
-EXEC master..xp_fixeddrives

@@ -1,5 +1,0 @@
-USE REPO
-GO
-EXEC sp_grantdbaccess 'CHOMP\Quality Management SQL Users', 'Quality Management SQL Users'
-GO
-EXEC sp_addrolemember 'AnalystRole', 'Quality Management SQL Users'
