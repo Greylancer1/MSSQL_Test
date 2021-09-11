@@ -1,0 +1,42 @@
+Parentage,AName,TypeID,ACode,ID
+58,Multiverse Hazard,1,,1
+5AC0,Commercial Lines,2,1000,3
+5AD6,East,3,A,9
+5AD6B0,New York,4,NY,31
+5AD6D0,Orlando,4,OR,32
+5ADA,West,3,C,11
+5ADAB0,Portland,4,PO,33
+5ADAD0,San Francisco,4,SF,34
+5ADE,Central,3,B,14
+5ADEB0,Chicago,4,CH,35
+5ADED0,Dallas,4,DA,36
+5B40,Commercial Lines (Small Business),2,1100,4
+5B56,East,3,A,16
+5B56B0,Orlando,4,OR,38
+5B5A,West,3,C,17
+5B5AB0,San Francisco,4,SF,39
+5B5E,Central,3,B,18
+5B5EB0,Chicago,4,CH,40
+5BC0,Personal Lines,2,2000,5
+5BD6,North East,3,D,19
+5BD6B0,New York,4,NY,41
+5BD6D0,Chicago,4,CH,42
+5BDA,North West,3,E,20
+5BDAB0,Portland,4,PO,43
+5BDE,South East,3,F,21
+5BDEB0,Orlando,4,OR,44
+5BE1,South West,3,G,22
+5BE158,Dallas,4,DA,45
+5BE168,San Francisco,4,SF,46
+68,The Acquisition & Risk Mitigation Agency,1,,2
+6AC0,Before You Leap Specialty Insurance Services,5,,6
+6AD6,Commercial Lines,6,,23
+6ADA,Personal Lines,6,,24
+6ADE,Specialty,6,,25
+6B40,Deep Pockets Risk,5,,7
+6B56,Purchasing,6,,26
+6B5A,Sales,6,,27
+6B5E,Consulting,6,,28
+6BC0,Coverage of All The Angles,5,,8
+6BD6,Mid-Atlantic,6,,29
+6BDA,Great Lakes,6,,30
