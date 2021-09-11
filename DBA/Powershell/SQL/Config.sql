@@ -1,2 +1,0 @@
-SELECT @@servername as ServerName,SERVERPROPERTY('ProductVersion') AS Version, name, value, minimum, maximum, value_in_use as [Value in use], description, is_dynamic AS [Dynamic?], is_advanced AS [Advanced?]
-FROM    sys.configurations ORDER BY name

@@ -1,6 +1,0 @@
-declare @user varchar(50)
-SELECT  @user = quotename(SL.Name)
-  FROM  master..sysdatabases SD inner join master..syslogins SL
-    on  SD.SID = SL.SID
- Where  SD.Name = DB_NAME()
-exec('exec sp_changedbowner ' + @user)

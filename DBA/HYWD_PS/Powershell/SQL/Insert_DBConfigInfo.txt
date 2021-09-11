@@ -1,9 +1,0 @@
-INSERT INTO DBConfigMon
-SELECT @@servername, name,  
-    CONVERT(nvarchar(50),DATABASEPROPERTYEX(name, 'Recovery')) AS RecoveryMode, 
-    CONVERT(nvarchar(50),DATABASEPROPERTYEX(name, 'Status')) AS [Status],
-	CONVERT(nvarchar(50),DATABASEPROPERTYEX(name, 'IsAutoClose')) AS [AutoClose],
-	CONVERT(nvarchar(50),DATABASEPROPERTYEX(name, 'IsAutoCreateStatistics')) AS [AutoStats],
-	CONVERT(nvarchar(50),DATABASEPROPERTYEX(name, 'IsAutoShrink')) AS [AutoShrink],
-	CONVERT(nvarchar(50),DATABASEPROPERTYEX(name, 'IsFullTextEnabled')) AS [FullText]
-FROM   master.dbo.sysdatabases 
