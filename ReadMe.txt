@@ -1,3 +1,5 @@
+Correction:  I just noticed that I should add a column to the users table with the client hierarchy ID ie. /1/ or /2/ for our two clients.
+
 Database was created using Microsoft SQL Server 2019 (RTM-GDR) (KB4583458) - 15.0.2080.9 (X64)   Nov  6 2020 16:50:01   Copyright (C) 2019 Microsoft Corporation  Developer Edition (64-bit) on Windows 10 Pro 10.0 <X64> (Build 19043: )
 
 Should there be any issues restoring the database backup, I also created a script to reconstruct the database and sent .csv files which can be used to populate it with the test data I used.
