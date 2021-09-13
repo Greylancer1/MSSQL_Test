@@ -47,7 +47,7 @@ Flat Table
 Bridge Table
 
 I explored several of these initially but did not like how it was working out.
-
+For Multi-tenant-
 Seperate Databases?
 	Best Data isolation
 	Better backup and recovery options
@@ -67,9 +67,9 @@ Some other possible options but complicated to implement:
 
 Possible ways to improve performance for a single instance/database multi-tenant system:
 	Always-On/Mirroring to offload reads for clients to different servers
-	Federation keep all common data used by all tenants in a central location and only have customer centric data in seperate tenant node 
+	Federation keep all common data used by all tenants in a central location for easier updates and only have customer centric data in seperate tenant node 
 
 This was kind of a variation on using a bridge table:
 Using an "Ownership Matrix Table" to track what data in which tables belongs to which clients
 	With this I could dynamically generate SQL queries to build data sets customized to each client based on what fields in the matrix are filled out.
-	We could break up our ownership matrix table (and each client data table) into one per client and assign a schema to each to help secure that data
+	We could break up our ownership matrix table (and each client data table) into one per client and assign a schema to each to help secure that data.
