@@ -1,4 +1,4 @@
-Correction:  I just noticed that I should add a column to the users table with the client hierarchy ID ie. /1/ or /2/ for our two clients.
+09/13 Correction:  I noticed that I forgot to add a column to the users table with the client hierarchy ID ie. /1/ or /2/ for our two clients.
 
 Database was created using Microsoft SQL Server 2019 (RTM-GDR) (KB4583458) - 15.0.2080.9 (X64)   Nov  6 2020 16:50:01   Copyright (C) 2019 Microsoft Corporation  Developer Edition (64-bit) on Windows 10 Pro 10.0 <X64> (Build 19043: )
 
